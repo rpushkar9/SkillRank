@@ -1,0 +1,14 @@
+# Search pipeline generated data
+search/data/
+search/embeddings_cache.pkl
+search/test_embeddings_cache.pkl
+search/test_sample_50.jsonl
+
+# Virtual environment
+search/venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
