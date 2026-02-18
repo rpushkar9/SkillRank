@@ -5,7 +5,7 @@ Run the full search pipeline on the entire dataset and persist all data locally.
 - Loads skills from skills_scraper/data/skills_raw.jsonl
 - Builds BM25 index (in memory, persisted implicitly via this script's state)
 - Builds vector embeddings and caches to search/embeddings_cache.pkl
-- Runs a set of queries and saves results to search/data/
+- Writes index metadata to search/data/index_meta.json
 """
 
 import json
@@ -24,9 +24,7 @@ from search_engine import SkillSearchEngine
 
 # Local data directory for all outputs
 DATA_DIR = SCRIPT_DIR / "data"
-RESULTS_FILE = DATA_DIR / "search_results.jsonl"
 INDEX_META_FILE = DATA_DIR / "index_meta.json"
-QUERIES_FILE = DATA_DIR / "queries_run.json"
 
 
 def ensure_data_dir():
@@ -35,13 +33,12 @@ def ensure_data_dir():
     print(f"Data directory: {DATA_DIR}")
 
 
-def run_full_pipeline(skills_path: str = None, run_queries: bool = True):
+def run_full_pipeline(skills_path: str = None):
     """
     Run the full pipeline on the entire dataset and save everything locally.
     
     Args:
         skills_path: Path to skills_raw.jsonl (default: auto)
-        run_queries: If True, run example queries and save results
     """
     ensure_data_dir()
     
@@ -72,66 +69,7 @@ def run_full_pipeline(skills_path: str = None, run_queries: bool = True):
     with open(INDEX_META_FILE, "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)
     print(f"Index metadata saved to: {INDEX_META_FILE}")
-    
-    if not run_queries:
-        print("\nPipeline ready. Re-run without --no-queries to run and save query results.")
-        return
-    
-    print("\nRunning queries and saving results to data/ ...")
-    # Representative queries to run
-    queries = [
-        "react testing",
-        "python django",
-        "deployment kubernetes",
-        "api design",
-        "testing framework",
-        "database",
-        "frontend css",
-        "security",
-        "docker",
-        "documentation",
-    ]
-    
-    all_results = []
-    
-    with open(RESULTS_FILE, "w", encoding="utf-8") as out:
-        for query in queries:
-            results = engine.search(query, top_k=3, verbose=False)
-            record = {
-                "query": query,
-                "top_k": 3,
-                "results": [
-                    {
-                        "rank": i + 1,
-                        "name": r["name"],
-                        "final_score": r["final_score"],
-                        "description": r["description"][:200] + "..." if len(r["description"]) > 200 else r["description"],
-                        "skill_url": r["skill_url"],
-                        "weekly_installs": r["weekly_installs"],
-                        "total_installs": r["total_installs"],
-                        "first_seen": r["first_seen"],
-                        "score_breakdown": r["score_breakdown"],
-                    }
-                    for i, r in enumerate(results)
-                ],
-            }
-            all_results.append(record)
-            out.write(json.dumps(record, ensure_ascii=False) + "\n")
-            print(f"  Query: '{query}' -> top 3 saved")
-    
-    print(f"\nResults written to: {RESULTS_FILE}")
-    
-    # Save query list and summary
-    queries_summary = {
-        "queries": queries,
-        "results_file": str(RESULTS_FILE),
-        "run_at": datetime.now().isoformat(),
-        "num_queries": len(queries),
-    }
-    with open(QUERIES_FILE, "w", encoding="utf-8") as f:
-        json.dump(queries_summary, f, indent=2)
-    print(f"Queries summary: {QUERIES_FILE}")
-    
+
     print("\n" + "="*70)
     print("Pipeline complete. All data stored locally.")
     print("="*70)
@@ -139,18 +77,18 @@ def run_full_pipeline(skills_path: str = None, run_queries: bool = True):
     print(f"  Skills count:   {n_skills}")
     print(f"  Embeddings:     {cache_path}")
     print(f"  Index meta:     {INDEX_META_FILE}")
-    print(f"  Query results:  {RESULTS_FILE}")
-    print(f"  Queries list:   {QUERIES_FILE}")
+    print("")
+    print("Run ad-hoc searches via CLI, e.g.:")
+    print("  python cli.py \"react testing\" --top-k 3 --names-only")
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Run full search pipeline and save data locally")
+    parser = argparse.ArgumentParser(description="Build full-dataset indices and save metadata locally")
     parser.add_argument("--data-path", type=str, default=None, help="Path to skills_raw.jsonl")
-    parser.add_argument("--no-queries", action="store_true", help="Only build indices, do not run queries")
     args = parser.parse_args()
     
-    run_full_pipeline(skills_path=args.data_path, run_queries=not args.no_queries)
+    run_full_pipeline(skills_path=args.data_path)
 
 
 if __name__ == "__main__":

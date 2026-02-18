@@ -1,6 +1,6 @@
 # Skills Hybrid Search and Ranking System
 
-A production-ready hybrid retrieval system that combines **BM25 keyword search** and **semantic vector search** to recommend the most relevant skills from a dataset of 981 skills.
+A hybrid retrieval system that combines **BM25 keyword search** and **semantic vector search** to recommend the most relevant skills from a dataset of 981 skills.
 
 ## Features
 
@@ -46,20 +46,88 @@ This ensures that only truly relevant results benefit from popularity signals, p
 
 ## Installation
 
-### 1. Install Dependencies
+### Recommended: Conda Environment
+
+**Create conda environment (Python 3.10 recommended):**
 
 ```bash
+# Create environment
+conda create -n skills python=3.10 -y
+conda activate skills
+
+# Install PyTorch via conda (CPU version)
+conda install pytorch cpuonly -c pytorch -y
+# Or for GPU: conda install pytorch pytorch-cuda=12.1 -c pytorch -c nvidia
+
+# Install other dependencies
 cd search
 pip install -r requirements.txt
 ```
 
+**Why conda?** PyTorch has complex dependencies and conda handles them better than pip alone.
+
+
 **Dependencies:**
-- `rank-bm25==0.2.2` - BM25 keyword search
-- `sentence-transformers==2.3.1` - Semantic embeddings
-- `numpy==1.24.3` - Numerical operations
-- `scikit-learn==1.3.2` - Similarity metrics
-- `pandas==2.1.4` - Data handling
-- `python-dateutil==2.8.2` - Date parsing
+- `torch>=2.4.0` - Deep learning framework (install via conda recommended)
+- `rank-bm25` - BM25 keyword search
+- `sentence-transformers>=2.3.0` - Semantic embeddings
+- `numpy<2.0.0` - Numerical operations (NumPy 2.x causes compatibility issues)
+- `scikit-learn` - Similarity metrics
+- `pandas` - Data handling
+- `python-dateutil` - Date parsing
+- `nltk` - Natural language toolkit for stopwords
+
+### Troubleshooting
+
+**Problem 1: PyTorch version conflict**
+```
+Disabling PyTorch because PyTorch >= 2.4 is required but found 2.2.2
+```
+**Solution:** Install PyTorch 2.4+ via conda:
+```bash
+conda activate skills
+conda install 'pytorch>=2.4' cpuonly -c pytorch -y
+```
+
+**Problem 2: NumPy version incompatibility**
+```
+A module that was compiled using NumPy 1.x cannot be run in NumPy 2.2.6
+```
+**Solution:** Downgrade NumPy to 1.x:
+```bash
+pip install "numpy<2.0.0"
+```
+
+**Problem 3: NameError: name 'nn' is not defined**
+This is usually caused by incompatible versions of `transformers` and `torch`. **Solution:**
+```bash
+# Reinstall compatible versions
+conda activate skills
+conda install 'pytorch>=2.4' cpuonly -c pytorch -y
+pip install --upgrade transformers sentence-transformers
+```
+
+**Problem 4: NLTK SSL certificate error**
+```
+[nltk_data] Error loading stopwords: CERTIFICATE_VERIFY_FAILED
+```
+**Solution:** Manually download NLTK data:
+```python
+import nltk
+import ssl
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+nltk.download('stopwords')
+nltk.download('punkt')
+```
+
+**Problem 5: Python 3.13 compatibility**
+Python 3.13 is too new - PyTorch and many ML libraries don't support it yet. **Use Python 3.10 or 3.11** instead.
 
 ### 2. First Run (Embedding Generation)
 
@@ -73,7 +141,7 @@ Embeddings are cached in `embeddings_cache.pkl` for instant subsequent searches.
 
 ### 3. Run Full Dataset and Save Data Locally
 
-To run the entire pipeline on the full dataset (981 skills) and persist all data locally:
+To build indices on the full dataset (981 skills) and persist cache + metadata locally:
 
 ```bash
 cd search
@@ -87,13 +155,11 @@ python run_full_dataset.py
 |------|-------------|
 | `search/data/` | Output directory (created automatically) |
 | `search/data/index_meta.json` | Index metadata (dataset path, skill count, cache path, timestamp) |
-| `search/data/search_results.jsonl` | One JSON object per line: query + top-3 results with scores |
-| `search/data/queries_run.json` | List of queries run and paths |
 | `search/embeddings_cache.pkl` | Cached vector embeddings (reused on next run) |
 
 **Options:**
 - `--data-path PATH` — Use a custom path to `skills_raw.jsonl`
-- `--no-queries` — Only build indices and save metadata; do not run example queries
+- Use `cli.py` to run queries interactively
 
 ## Usage
 
@@ -151,51 +217,6 @@ for result in results:
     print(f"Score breakdown: {result['score_breakdown']}")
 ```
 
-## Example Output
-
-```bash
-$ python cli.py "react performance optimization"
-
-================================================================================
-TOP 3 RECOMMENDATIONS
-================================================================================
-
-1. vercel-react-best-practices
-   ──────────────────────────────────────────────────────────────────────
-   React and Next.js performance optimization guidelines from Vercel
-   Engineering. This skill should be used when writing, reviewing, or...
-
-   📊 Weekly installs: 223.0K
-   📈 Total installs: 222973
-   📅 First seen: Jan 26, 2026
-   🔗 URL: https://github.com/vercel-labs/agent-skills
-
-   ⭐ Relevance Score: 0.8542
-
-2. react-patterns
-   ──────────────────────────────────────────────────────────────────────
-   React component patterns, hooks best practices, and performance...
-
-   📊 Weekly installs: 45.2K
-   📈 Total installs: 89034
-   📅 First seen: Jan 15, 2026
-   🔗 URL: https://github.com/example/react-patterns
-
-   ⭐ Relevance Score: 0.7891
-
-3. nextjs-optimization
-   ──────────────────────────────────────────────────────────────────────
-   Next.js specific optimization techniques including image optimization...
-
-   📊 Weekly installs: 32.1K
-   📈 Total installs: 67234
-   📅 First seen: Jan 20, 2026
-   🔗 URL: https://github.com/example/nextjs-optimization
-
-   ⭐ Relevance Score: 0.7423
-
-================================================================================
-```
 
 ## File Structure
 
@@ -287,63 +308,6 @@ python reranker.py
 python search_engine.py
 ```
 
-## Customization
-
-### Adjust Scoring Weights and Threshold
-
-Edit `search_engine.py` to change reranker weights:
-
-```python
-self.reranker = Reranker(
-    self.skills,
-    retrieval_weight=0.5,           # Stage 1: retrieval relevance
-    title_match_weight=0.1,         # Stage 1: title match bonus
-    recency_weight=0.15,            # Stage 2: recency boost
-    weekly_installs_weight=0.15,    # Stage 2: weekly popularity
-    total_installs_weight=0.1,      # Stage 2: total popularity
-    relevance_threshold=0.4         # Minimum retrieval score for stage 2 boost
-)
-```
-
-### Use Different Embedding Model
-
-Edit `vector_retriever.py`:
-
-```python
-retriever = VectorRetriever(
-    skills,
-    model_name='all-mpnet-base-v2'  # More accurate but slower
-)
-```
-
-Available models:
-- `all-MiniLM-L6-v2` (default) - Fast, 384-dim, 80MB
-- `all-mpnet-base-v2` - More accurate, 768-dim, 420MB
-- `multi-qa-MiniLM-L6-cos-v1` - Optimized for Q&A
-
-### Change Result Count
-
-```python
-# Get top 25 from each retriever instead of 25
-results = engine.search(query, bm25_top_k=50, vector_top_k=50)
-```
-
-## Troubleshooting
-
-### Issue: "ModuleNotFoundError: No module named 'rank_bm25'"
-**Solution:** Install dependencies: `pip install -r requirements.txt`
-
-### Issue: Slow first run
-**Expected:** First run downloads the sentence-transformer model (~80MB) and generates embeddings. Subsequent runs are fast.
-
-### Issue: "FileNotFoundError: Skills file not found"
-**Solution:** Run from the project root or provide `--data-path`:
-```bash
-python cli.py "query" --data-path ../skills_scraper/data/skills_raw.jsonl
-```
-
-### Issue: Out of memory
-**Solution:** Use a smaller embedding model or reduce batch size in `vector_retriever.py`
 
 ## Future Enhancements
 

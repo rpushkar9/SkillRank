@@ -1,7 +1,7 @@
 """
 Vector retriever for semantic search.
 
-Uses sentence-transformers when available; falls back to TF-IDF vectors otherwise.
+Uses sentence-transformers to generate embeddings and perform cosine similarity search.
 Includes embedding caching for performance.
 """
 
@@ -9,15 +9,7 @@ import pickle
 import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
-
-try:
-    from sentence_transformers import SentenceTransformer
-    _HAS_SENTENCE_TRANSFORMERS = True
-except ImportError:
-    SentenceTransformer = None
-    _HAS_SENTENCE_TRANSFORMERS = False
-
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
@@ -76,13 +68,11 @@ class VectorRetriever:
         Returns:
             Cache key string
         """
-        backend = "st" if _HAS_SENTENCE_TRANSFORMERS else "tfidf"
-        return f"{backend}_{self.model_name}_{len(self.skills)}"
+        return f"{self.model_name}_{len(self.skills)}"
     
     def _load_or_create_embeddings(self) -> np.ndarray:
         """
         Load embeddings from cache or create new ones.
-        Uses sentence-transformers when available, else TF-IDF.
         
         Returns:
             NumPy array of embeddings (shape: [num_skills, embedding_dim])
@@ -99,7 +89,6 @@ class VectorRetriever:
                 # Check if cache is valid
                 if cached_data.get('cache_key') == cache_key:
                     embeddings = cached_data['embeddings']
-                    self._tfidf_vectorizer = cached_data.get('tfidf_vectorizer')
                     print(f"Loaded {embeddings.shape[0]} embeddings from cache")
                     return embeddings
                 else:
@@ -107,21 +96,12 @@ class VectorRetriever:
             except Exception as e:
                 print(f"Failed to load cache: {e}")
         
+        # Create new embeddings with sentence-transformers
+        print(f"Creating embeddings using model: {self.model_name}")
+        print("This may take a few minutes for the first run...")
+        model = SentenceTransformer(self.model_name)
         texts = self._get_embedding_texts()
-        
-        if _HAS_SENTENCE_TRANSFORMERS:
-            # Create new embeddings with sentence-transformers
-            print(f"Creating embeddings using model: {self.model_name}")
-            print("This may take a few minutes for the first run...")
-            model = SentenceTransformer(self.model_name)
-            embeddings = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
-            self._tfidf_vectorizer = None
-        else:
-            # Fallback: TF-IDF vectors (no torch/sentence-transformers required)
-            print("Using TF-IDF fallback (sentence-transformers not available)")
-            vectorizer = TfidfVectorizer(max_features=384, stop_words="english", ngram_range=(1, 2))
-            embeddings = vectorizer.fit_transform(texts).toarray().astype(np.float32)
-            self._tfidf_vectorizer = vectorizer  # for query encoding in search()
+        embeddings = model.encode(texts, show_progress_bar=True, convert_to_numpy=True)
         
         # Save to cache
         try:
@@ -131,8 +111,6 @@ class VectorRetriever:
                 'embeddings': embeddings,
                 'model_name': self.model_name
             }
-            if self._tfidf_vectorizer is not None:
-                cache_data['tfidf_vectorizer'] = self._tfidf_vectorizer
             with open(self.cache_path, 'wb') as f:
                 pickle.dump(cache_data, f)
             print("Embeddings cached successfully")
@@ -152,13 +130,9 @@ class VectorRetriever:
         Returns:
             List of (skill_name, similarity_score) tuples, sorted by score descending
         """
-        if getattr(self, '_tfidf_vectorizer', None) is not None:
-            # TF-IDF path: encode query with same vectorizer
-            query_vec = self._tfidf_vectorizer.transform([query]).toarray().astype(np.float32)
-        else:
-            # sentence-transformers path
-            model = SentenceTransformer(self.model_name)
-            query_vec = model.encode([query], convert_to_numpy=True)
+        # Encode query with sentence-transformers
+        model = SentenceTransformer(self.model_name)
+        query_vec = model.encode([query], convert_to_numpy=True)
         
         # Compute cosine similarities
         similarities = cosine_similarity(query_vec, self.embeddings)[0]

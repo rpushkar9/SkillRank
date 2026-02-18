@@ -8,13 +8,19 @@ import re
 from typing import List, Dict, Any, Tuple
 from rank_bm25 import BM25Okapi
 
+# Use NLTK stopwords
+import nltk
 
-# Common English stopwords
-STOPWORDS = {
-    'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for', 'if', 'in',
-    'into', 'is', 'it', 'no', 'not', 'of', 'on', 'or', 'such', 'that', 'the',
-    'their', 'then', 'there', 'these', 'they', 'this', 'to', 'was', 'will', 'with'
-}
+# Download required NLTK data if not present
+try:
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('corpora/stopwords')
+except LookupError:
+    nltk.download('stopwords', quiet=True)
+    nltk.download('punkt', quiet=True)
+
+from nltk.corpus import stopwords
+STOPWORDS = set(stopwords.words('english'))
 
 
 def tokenize(text: str) -> List[str]:
