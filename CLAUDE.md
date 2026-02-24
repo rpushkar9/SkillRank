@@ -10,18 +10,25 @@ SkillRank is a hybrid skill-recommendation search engine. Given a natural-langua
 
 ## Environment Setup
 
-**Python 3.10 via conda is required** (the `__pycache__` shows cpython-314, but conda setup targets 3.10 for PyTorch compatibility).
+Two equivalent paths — pick one.
 
+**uv (recommended, no conda needed):**
+```bash
+brew install uv
+uv venv --python 3.11
+source .venv/bin/activate
+uv pip install -r search/requirements.txt pytest
+```
+
+**conda (if you need PyTorch GPU or already use conda):**
 ```bash
 conda create -n skills python=3.10 -y
 conda activate skills
 conda install pytorch cpuonly -c pytorch -y
-
-cd search
-pip install -r requirements.txt
+pip install -r search/requirements.txt
 ```
 
-> `torch` must be installed via conda, not pip (it's intentionally excluded from `requirements.txt`).
+> `torch` is intentionally excluded from `requirements.txt` (conda installs it separately). With uv, `sentence-transformers` pulls in a CPU-only torch automatically.
 
 ---
 
@@ -29,16 +36,19 @@ pip install -r requirements.txt
 
 **Build indices + cache embeddings (first run or after data changes):**
 ```bash
-cd search
-python run_full_dataset.py
+python search/run_full_dataset.py
 ```
 
 **Run a search query:**
 ```bash
-cd search
-python cli.py "your search query"
-python cli.py "react testing" --top-k 5 --verbose
-python cli.py "deployment" --names-only
+python search/cli.py "your search query"
+python search/cli.py "react testing" --top-k 5 --verbose
+python search/cli.py "deployment" --names-only
+```
+
+**Run unit tests (no full ML stack required):**
+```bash
+cd search && python -m pytest -v test_tokenize.py
 ```
 
 **Re-scrape skills data:**
@@ -53,7 +63,7 @@ scrapy crawl <spider_name>
 python scripts/analyze_skills_jsonl.py
 ```
 
-There are no automated tests or a test runner. Evaluation is manual via `test_cases/ground_truth_top3.md` (10 queries with Precision@3 comparisons).
+Unit tests for `tokenize()` live in `search/test_tokenize.py` (run with pytest). End-to-end evaluation is manual via `test_cases/ground_truth_top3.md` (10 queries, Precision@3).
 
 ---
 
@@ -104,4 +114,4 @@ search/cli.py               ← CLI entrypoint
 ## Current State / Known Issues
 
 - Average Precision@3 on the 10-query eval set is **0.20** (see `test_cases/ground_truth_top3.md`). Improving retrieval quality is the primary open problem.
-- Active branch `feat/separate-bm25-vector-scores` changed the merge format from `(name, max_score)` tuples to `{"name", "bm25_score", "vector_score"}` dicts to enable independent normalization in the reranker.
+- The merge format is `{"name", "bm25_score", "vector_score"}` dicts (no max-merge); BM25 and vector scores are normalized independently in the reranker.

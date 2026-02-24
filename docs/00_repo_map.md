@@ -46,31 +46,46 @@ scrapy crawl <spider_name>
 
 (Spider name is in `skills_scraper/skills_scraper/spiders/`; run `scrapy list` in that directory to see it.)
 
-### Search (recommended: conda)
+### Search
+
+Two equivalent setup paths — pick one.
+
+**Option A — uv (faster, no conda needed):**
 
 ```bash
-# One-time setup
+brew install uv                          # one-time
+uv venv --python 3.11
+source .venv/bin/activate
+uv pip install -r search/requirements.txt pytest
+```
+
+**Option B — conda (if you need PyTorch GPU or already use conda):**
+
+```bash
 conda create -n skills python=3.10 -y
 conda activate skills
 conda install pytorch cpuonly -c pytorch -y
-
-cd search
-pip install -r requirements.txt
+pip install -r search/requirements.txt
 ```
 
 **First run (build indices + cache embeddings):**
 
 ```bash
-cd search
-python run_full_dataset.py
+python search/run_full_dataset.py
 ```
 
 **Query from CLI:**
 
 ```bash
+python search/cli.py "your search query"
+python search/cli.py "react testing" --top-k 5 --verbose
+```
+
+**Unit tests (tokenizer, no full ML stack needed):**
+
+```bash
 cd search
-python cli.py "your search query"
-python cli.py "react testing" --top-k 5 --verbose
+python -m pytest -v test_tokenize.py
 ```
 
 **Optional:** use a custom skills file:
