@@ -26,22 +26,35 @@ STOPWORDS = set(stopwords.words('english'))
 def tokenize(text: str) -> List[str]:
     """
     Tokenize text for BM25 indexing.
-    
+
+    Steps:
+    1. Lowercase and extract alphanumeric tokens, removing stopwords and
+       single-character tokens.
+    2. Append concatenated bigrams for every pair of adjacent tokens so that
+       hyphenated or spaced compound terms ("front-end", "front end",
+       "frontend") all produce the same "frontend" token and match each other.
+
     Args:
         text: Text to tokenize
-        
+
     Returns:
-        List of tokens (lowercase, alphanumeric, no stopwords)
+        List of tokens (unigrams + adjacent concatenated bigrams)
     """
     # Convert to lowercase
     text = text.lower()
-    
+
     # Split on non-alphanumeric characters
     tokens = re.findall(r'\b[a-z0-9]+\b', text)
-    
+
     # Remove stopwords and very short tokens
     tokens = [t for t in tokens if t not in STOPWORDS and len(t) > 1]
-    
+
+    # Append concatenated bigrams for adjacent token pairs so that
+    # "front" + "end" → "frontend", "node" + "js" → "nodejs", etc.
+    # This makes "frontend", "front-end", and "front end" all match.
+    bigrams = [tokens[i] + tokens[i + 1] for i in range(len(tokens) - 1)]
+    tokens = tokens + bigrams
+
     return tokens
 
 

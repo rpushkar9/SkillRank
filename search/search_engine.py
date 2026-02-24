@@ -50,35 +50,28 @@ class SkillSearchEngine:
         self,
         bm25_results: List[Tuple[str, float]],
         vector_results: List[Tuple[str, float]]
-    ) -> List[Tuple[str, float]]:
+    ) -> List[Dict[str, Any]]:
         """
-        Merge and deduplicate results from BM25 and vector search.
-        
-        For duplicate skills, keep the higher score.
-        
+        Merge results from BM25 and vector search (union by skill name).
+        Retains both bm25_score and vector_score per candidate.
+
         Args:
             bm25_results: List of (skill_name, bm25_score) tuples
             vector_results: List of (skill_name, vector_score) tuples
-            
+
         Returns:
-            Merged list of (skill_name, score) tuples
+            List of candidate dicts: {"name", "bm25_score", "vector_score"}
+            (bm25_score or vector_score may be None if only in one retriever)
         """
-        # Use dictionary to track best score for each skill
         merged = {}
-        
-        # Add BM25 results
         for name, score in bm25_results:
-            merged[name] = score
-        
-        # Add vector results (keep higher score if duplicate)
+            merged[name] = {"name": name, "bm25_score": score, "vector_score": None}
         for name, score in vector_results:
             if name in merged:
-                merged[name] = max(merged[name], score)
+                merged[name]["vector_score"] = score
             else:
-                merged[name] = score
-        
-        # Convert back to list of tuples
-        return list(merged.items())
+                merged[name] = {"name": name, "bm25_score": None, "vector_score": score}
+        return list(merged.values())
     
     def search(
         self,
