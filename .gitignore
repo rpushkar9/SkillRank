@@ -6,6 +6,10 @@ search/test_sample_50.jsonl
 
 # Virtual environment
 search/venv/
+.venv/
+
+# Generated data (rebuild with scripts/build_skills_clean.py)
+skills_scraper/data/skills_clean.jsonl
 
 # Python
 __pycache__/

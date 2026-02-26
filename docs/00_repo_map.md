@@ -81,16 +81,30 @@ python search/cli.py "your search query"
 python search/cli.py "react testing" --top-k 5 --verbose
 ```
 
-**Unit tests (tokenizer, no full ML stack needed):**
+**Unit tests (tokenizer + cleaner, no full ML stack needed):**
 
 ```bash
-cd search
-python -m pytest -v test_tokenize.py
+python -m pytest -q                         # all tests from repo root
+cd search && python -m pytest -v test_tokenize.py   # tokenizer only
+```
+
+**Build the cleaned dataset (optional but recommended):**
+
+```bash
+python scripts/build_skills_clean.py
+# writes skills_scraper/data/skills_clean.jsonl
+# prints a short report: rows, parse failures, duplicate names
+```
+
+**Search against the cleaned dataset:**
+
+```bash
+python search/cli.py "frontend" --data-path skills_scraper/data/skills_clean.jsonl --top-k 5 --verbose
 ```
 
 **Optional:** use a custom skills file:
 
 ```bash
-python cli.py "query" --data-path /path/to/skills_raw.jsonl
-python run_full_dataset.py --data-path /path/to/skills_raw.jsonl
+python search/cli.py "query" --data-path /path/to/skills_raw.jsonl
+python search/run_full_dataset.py --data-path /path/to/skills_raw.jsonl
 ```

@@ -42,19 +42,20 @@ def parse_install_count(count_str: str) -> float:
 
 def parse_date(date_str: str) -> datetime:
     """
-    Parse date strings like 'Jan 26, 2026' to datetime objects.
-    
-    Args:
-        date_str: Date string (e.g., "Jan 26, 2026")
-        
-    Returns:
-        datetime object
+    Parse date strings to datetime objects.
+
+    Supports:
+      'Jan 26, 2026'  - raw scraper format
+      '2026-01-26'    - ISO format produced by skills_clean.jsonl
+
+    Falls back to datetime(2000, 1, 1) on failure so recency score → 0.
     """
-    try:
-        return datetime.strptime(date_str, "%b %d, %Y")
-    except (ValueError, TypeError):
-        # Default to a very old date if parsing fails
-        return datetime(2000, 1, 1)
+    for fmt in ("%b %d, %Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(date_str, fmt)
+        except (ValueError, TypeError):
+            pass
+    return datetime(2000, 1, 1)
 
 
 def clean_text(text: str) -> str:
@@ -121,8 +122,12 @@ def load_skills(jsonl_path: str) -> List[Dict[str, Any]]:
                 except (ValueError, TypeError):
                     total_installs = 0.0
                 
-                # Parse date
-                first_seen_str = skill.get('first_seen', '')
+                # Parse date — support both raw ('first_seen') and
+                # clean-JSONL ('first_seen_date') schemas
+                first_seen_str = (
+                    skill.get('first_seen', '')
+                    or skill.get('first_seen_date', '')
+                )
                 first_seen = parse_date(first_seen_str)
                 
                 # Create searchable text by combining fields

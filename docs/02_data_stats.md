@@ -29,3 +29,47 @@ python3 scripts/analyze_skills_jsonl.py
 
 - **Script path:** `scripts/analyze_skills_jsonl.py`
 - The script reads `skills_scraper/data/skills_raw.jsonl`, prints total rows, per-field % missing / % empty with up to 3 example non-empty values, and the length distribution table above.
+
+---
+
+## Cleaned dataset
+
+**File:** `skills_scraper/data/skills_clean.jsonl`
+**Rows:** 981 (same as raw; all `skill_id` values are unique — 0 duplicates removed)
+
+### Schema changes from raw
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `skill_id` | string | sha1(name + `\|` + skill_url) — stable unique ID |
+| `name` | string | unchanged |
+| `description` | string | HTML entities removed, whitespace collapsed |
+| `example_usage` | string | same cleaning |
+| `weekly_installs_raw` | string | original string from scraper (e.g. `"4.2K"`) |
+| `total_installs_raw` | string | original string from scraper |
+| `weekly_installs` | int | parsed from raw (K/M suffixes handled) |
+| `total_installs` | int | parsed from raw |
+| `first_seen_raw` | string | original string from scraper |
+| `first_seen_date` | string | ISO `YYYY-MM-DD`; `""` if blank (1 row) |
+| `skill_url` | string | unchanged |
+| `searchable_text` | string | HTML-cleaned `name + description + example_usage` |
+| `name_norm` | string | lowercase, hyphens/spaces removed (e.g. `"frontend"`) |
+
+### Parse edge cases found
+
+- **`weekly_installs`:** always uses K suffix or plain integer — no failures.
+- **`total_installs`:** always plain integer string — no failures.
+- **`first_seen`:** 125 rows used relative strings (`"12 days ago"`, `"Today"`) instead of absolute dates. The cleaner resolves these relative to the run date. 1 row has a blank `first_seen` (name: `vue-jsx-best-practices`), which produces `first_seen_date: ""`.
+- **HTML entities:** `&#x3C;` (`<`), `&#x26;` (`&`), `&amp;`, `&lt;` etc. appear frequently in `example_usage`. All removed by `clean_text()`.
+
+### How to build / rebuild
+
+```bash
+python scripts/build_skills_clean.py
+```
+
+Point the search CLI at the clean file:
+
+```bash
+python search/cli.py "frontend" --data-path skills_scraper/data/skills_clean.jsonl --top-k 5 --verbose
+```

@@ -112,3 +112,22 @@ class TestStableBehaviour:
         # bigrams
         assert "reacttesting" in tokens
         assert "testingframework" in tokens
+
+
+# ---------------------------------------------------------------------------
+# --trace CLI flag smoke test (no ML stack required)
+# ---------------------------------------------------------------------------
+
+class TestTraceCLI:
+    """Verify --trace is a recognised argument without running the engine."""
+
+    def test_trace_flag_in_help_output(self):
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, "cli.py", "--help"],
+            capture_output=True,
+            text=True,
+            cwd=str(Path(__file__).parent),
+        )
+        assert result.returncode == 0
+        assert "--trace" in result.stdout
