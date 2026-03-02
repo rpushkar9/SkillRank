@@ -22,3 +22,6 @@ __pycache__/
 .cursor/
 .aider*
 .continue/
+
+# Project-level AI tooling config (local only)
+CLAUDE.md

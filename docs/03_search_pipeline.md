@@ -4,44 +4,13 @@ Step-by-step description of the hybrid search pipeline.
 
 ---
 
-## 0. Cleaned dataset (optional pre-step)
-
-Before running the search pipeline you can build a normalized copy of the raw data:
-
-```bash
-python scripts/build_skills_clean.py
-# Reads:  skills_scraper/data/skills_raw.jsonl
-# Writes: skills_scraper/data/skills_clean.jsonl
-```
-
-The clean file adds these normalized fields on top of the raw schema:
-
-| Field | Notes |
-|-------|-------|
-| `skill_id` | sha1(name + `\|` + skill_url) — stable unique ID per skill |
-| `weekly_installs` | int (K/M suffixes parsed: `"4.2K"` → 4200) |
-| `total_installs` | int (plain integer string parsed) |
-| `first_seen_date` | ISO `YYYY-MM-DD`; relative scraper strings (`"N days ago"`, `"Today"`) resolved at run time |
-| `searchable_text` | HTML entities stripped from `name + description + example_usage` |
-| `name_norm` | lowercase, hyphens/spaces removed — for loose name matching |
-
-To run the full pipeline against the clean file, pass `--data-path`:
-
-```bash
-python search/cli.py "frontend" --data-path skills_scraper/data/skills_clean.jsonl --top-k 5 --verbose
-```
-
-`data_loader.py` supports both schemas transparently: it falls back to `first_seen_date` if `first_seen` is absent, and `parse_date()` accepts both `"Jan 26, 2026"` and ISO `"2026-01-26"`.
-
----
-
 ## 1. Data loading + searchable text
 
 - **File:** `search/data_loader.py`
 - **Entry:** `load_skills(jsonl_path)` loads the JSONL and returns a list of normalized skill dicts.
 - **Cleaning:** `clean_text()` strips HTML entities and normalizes whitespace for `description` and `example_usage`.
-- **Searchable text (used for BM25):** Built in `load_skills()` as
-  `searchable_text = f"{name} {description} {example_usage}"`
+- **Searchable text (used for BM25):** Built in `load_skills()` as  
+  `searchable_text = f"{name} {description} {example_usage}"`  
   So BM25 indexes **name + description + example_usage**.
 
 ---
@@ -50,9 +19,7 @@ python search/cli.py "frontend" --data-path skills_scraper/data/skills_clean.jso
 
 - **File:** `search/bm25_retriever.py`
 - **Indexed text:** Each skill’s `searchable_text` (name + description + example_usage).
-- **Tokenization:** `tokenize()` — two passes:
-  1. Lowercase, extract alphanumeric tokens via `\b[a-z0-9]+\b`, remove English stopwords and tokens of length ≤ 1.
-  2. Append **concatenated bigrams** for every adjacent token pair (e.g. `["front","end"] → "frontend"`). This makes `"frontend"`, `"front-end"`, and `"front end"` all produce the same `"frontend"` token and match each other.
+- **Tokenization:** `tokenize()` — lowercase, alphanumeric tokens via `\b[a-z0-9]+\b`, remove English stopwords and tokens of length ≤ 1.
 - **Index:** `BM25Okapi(self.tokenized_corpus)` built in `BM25Retriever.__init__`.
 
 ---
@@ -78,30 +45,26 @@ python search/cli.py "frontend" --data-path skills_scraper/data/skills_clean.jso
 ## 5. Merge logic
 
 - **File:** `search/search_engine.py`, `_merge_results(bm25_results, vector_results)`.
-- **Behavior:** Union of both result sets. Each candidate is a dict `{"name", "bm25_score", "vector_score"}`. If a skill appears in only one retriever, the other score field is `None`. The raw scores are **not combined here**; normalization and combination happen inside the reranker.
-- **Output:** `List[Dict]` with one entry per unique skill name (order from dict insertion; final sort happens in the reranker).
+- **Behavior:** Union of both result sets. For duplicate skill names, the merged score is **max(bm25_score, vector_score)**. Result is a list of `(skill_name, score)` (order from dict iteration; full sort happens in the reranker).
 
 ---
 
 ## 6. Reranker scoring (stage 1 and stage 2)
 
 - **File:** `search/reranker.py`, `Reranker.rerank(query, candidates)`.
-- **Input:** `candidates` = merged list of `{"name", "bm25_score", "vector_score"}` dicts (scores may be `None`).
+- **Input:** `candidates` = merged list of `(skill_name, retrieval_score)`.
 
 **Normalization**
 
-- BM25 and vector scores are min–max normalized **independently** to [0, 1] via `_normalize_scores()` (treating `None` as 0).
-- **Combined retrieval score:**
-  `combined_retrieval = W_BM25 * bm25_norm + W_VEC * vector_norm`
-  Defaults: **W_BM25 = 0.5**, **W_VEC = 0.5** (defined at top of `reranker.py`).
+- Retrieval scores are min–max normalized to [0, 1] via `_normalize_retrieval_score(candidates)`.
 
 **Stage 1 — Relevance**
 
 - For each candidate:
-  - `combined_retrieval` = weighted sum of independently-normalized BM25 + vector scores (see above).
+  - `retrieval_score` = normalized retrieval score.
   - `title_match_score` = `_compute_title_match_score(query, skill_name)` (exact 1.0, substring 0.5, word overlap 0.3 × ratio, else 0).
-- **Stage 1 score:**
-  `stage1_score = combined_retrieval * retrieval_weight + title_match_score * title_match_weight`
+- **Stage 1 score:**  
+  `stage1_score = retrieval_score * retrieval_weight + title_match_score * title_match_weight`  
   Defaults: **retrieval_weight = 0.5**, **title_match_weight = 0.1**.
 
 Results are sorted by `stage1_score` and the top **top_n_for_stage2** (default **50**) are kept for stage 2.
@@ -111,32 +74,11 @@ Results are sorted by `stage1_score` and the top **top_n_for_stage2** (default *
 - For each of those top-N candidates:
   - Recency score: `1 / (1 + days_old/30)` from `first_seen`.
   - Weekly and total installs: log-scale normalized to [0, 1] via `_compute_installs_score` using precomputed log min/max/range.
-- **Threshold:** If **combined_retrieval >= relevance_threshold** (default **0.4**):
+- **Threshold:** If **retrieval_score >= relevance_threshold** (default **0.4**):
   - **final_score** = stage1_score + recency × **0.15** + weekly_installs × **0.15** + total_installs × **0.1**.
 - Else: **final_score** = stage1_score (no popularity boost).
 
 Final output is sorted by `final_score` descending and returned as `(skill_name, final_score, score_breakdown)`.
-
----
-
-## 7. `--trace` flag
-
-Pass `--trace` to the CLI to print retrieval internals without changing ranking:
-
-```bash
-python search/cli.py "frontend" --top-k 5 --trace
-```
-
-Output sections (printed before the normal ranked results):
-
-```
-TRACE: BM25 top 10          — name + raw bm25 score
-TRACE: Vector top 10        — name + cosine similarity score
-TRACE: Merged candidates total: N
-TRACE: Top 10 after rerank  — name, bm25_norm, vec_norm, combined_retrieval, final_score
-```
-
-Implemented in `search_engine._print_trace()`, called from `search_engine.search(trace=True)`.
 
 ---
 
@@ -145,14 +87,13 @@ Implemented in `search_engine._print_trace()`, called from `search_engine.search
 | Item | Value |
 |------|--------|
 | BM25 indexed text | name + description + example_usage |
-| BM25 tokenization | unigrams + adjacent concatenated bigrams |
 | Vector embedded text | name + description only |
 | Vector model | all-MiniLM-L6-v2 (default) |
 | bm25_top_k | 25 |
 | vector_top_k | 25 |
 | stage2 top_n_for_stage2 | 50 |
-| Merge format | `{"name", "bm25_score", "vector_score"}` dict; no score combination at merge |
-| Retrieval score | BM25 and vector normalized independently; combined as W_BM25=0.5 × bm25_norm + W_VEC=0.5 × vector_norm |
+| Merge on duplicate | max(bm25_score, vector_score) |
+| Retrieval score | min–max normalized to [0, 1] |
 | Stage 1 | retrieval_weight=0.5, title_match_weight=0.1 |
-| Stage 2 threshold | combined_retrieval >= 0.4 |
+| Stage 2 threshold | retrieval_score >= 0.4 |
 | Stage 2 weights | recency 0.15, weekly_installs 0.15, total_installs 0.1 |
