@@ -62,6 +62,29 @@ python3 scripts/analyze_skills_jsonl.py
 - **`first_seen`:** 125 rows used relative strings (`"12 days ago"`, `"Today"`) instead of absolute dates. The cleaner resolves these relative to the run date. 1 row has a blank `first_seen` (name: `vue-jsx-best-practices`), which produces `first_seen_date: ""`.
 - **HTML entities:** `&#x3C;` (`<`), `&#x26;` (`&`), `&amp;`, `&lt;` etc. appear frequently in `example_usage`. All removed by `clean_text()`.
 
+### Cleaned dataset stats (run 2026-02-25)
+
+| Metric | Value |
+|--------|-------|
+| Rows written | 981 |
+| Duplicate skill_ids removed | 0 (all unique) |
+| Parse failures (installs) | 0 |
+| Parse failures (date) | 0 (relative strings resolved) |
+| Rows with empty `first_seen_date` | 1 (`vue-jsx-best-practices` — blank in raw) |
+
+**Duplicate names** (same name, different repos — all retained with distinct `skill_id`):
+
+| Name | Count |
+|------|-------|
+| skill-creator | 6 |
+| ui-ux-pro-max | 5 |
+| brainstorming | 4 |
+| frontend-design | 4 |
+| vue-router-best-practices | 3 |
+| humanizer | 3 |
+| web-design-guidelines | 3 |
+| vue-best-practices | 3 |
+
 ### How to build / rebuild
 
 ```bash

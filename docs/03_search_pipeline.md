@@ -4,13 +4,44 @@ Step-by-step description of the hybrid search pipeline.
 
 ---
 
+## 0. Cleaned dataset (optional pre-step)
+
+Before running the search pipeline you can build a normalized copy of the raw data:
+
+```bash
+python scripts/build_skills_clean.py
+# Reads:  skills_scraper/data/skills_raw.jsonl
+# Writes: skills_scraper/data/skills_clean.jsonl
+```
+
+The clean file adds these normalized fields on top of the raw schema:
+
+| Field | Notes |
+|-------|-------|
+| `skill_id` | sha1(name + `\|` + skill_url) — stable unique ID per skill |
+| `weekly_installs` | int (K/M suffixes parsed: `"4.2K"` → 4200) |
+| `total_installs` | int (plain integer string parsed) |
+| `first_seen_date` | ISO `YYYY-MM-DD`; relative scraper strings (`"N days ago"`, `"Today"`) resolved at run time |
+| `searchable_text` | HTML entities stripped from `name + description + example_usage` |
+| `name_norm` | lowercase, hyphens/spaces removed — for loose name matching |
+
+To run the full pipeline against the clean file, pass `--data-path`:
+
+```bash
+python search/cli.py "frontend" --data-path skills_scraper/data/skills_clean.jsonl --top-k 5 --verbose
+```
+
+`data_loader.py` supports both schemas transparently: it falls back to `first_seen_date` if `first_seen` is absent, and `parse_date()` accepts both `"Jan 26, 2026"` and ISO `"2026-01-26"`.
+
+---
+
 ## 1. Data loading + searchable text
 
 - **File:** `search/data_loader.py`
 - **Entry:** `load_skills(jsonl_path)` loads the JSONL and returns a list of normalized skill dicts.
 - **Cleaning:** `clean_text()` strips HTML entities and normalizes whitespace for `description` and `example_usage`.
-- **Searchable text (used for BM25):** Built in `load_skills()` as  
-  `searchable_text = f"{name} {description} {example_usage}"`  
+- **Searchable text (used for BM25):** Built in `load_skills()` as
+  `searchable_text = f"{name} {description} {example_usage}"`
   So BM25 indexes **name + description + example_usage**.
 
 ---
@@ -85,6 +116,27 @@ Results are sorted by `stage1_score` and the top **top_n_for_stage2** (default *
 - Else: **final_score** = stage1_score (no popularity boost).
 
 Final output is sorted by `final_score` descending and returned as `(skill_name, final_score, score_breakdown)`.
+
+---
+
+## 7. `--trace` flag
+
+Pass `--trace` to the CLI to print retrieval internals without changing ranking:
+
+```bash
+python search/cli.py "frontend" --top-k 5 --trace
+```
+
+Output sections (printed before the normal ranked results):
+
+```
+TRACE: BM25 top 10          — name + raw bm25 score
+TRACE: Vector top 10        — name + cosine similarity score
+TRACE: Merged candidates total: N
+TRACE: Top 10 after rerank  — name, bm25_norm, vec_norm, combined_retrieval, final_score
+```
+
+Implemented in `search_engine._print_trace()`, called from `search_engine.search(trace=True)`.
 
 ---
 

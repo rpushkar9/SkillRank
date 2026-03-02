@@ -105,6 +105,14 @@ Run: `python -m pytest scripts/test_build_skills_clean.py -v`
 
 ---
 
+## 2026-02-25 — Session checkpoint
+
+- Verified end-to-end CLI run on `skills_clean.jsonl`: ISO dates now render correctly (`2026-01-17`) in `--verbose` output; all 57 tests pass.
+- Created session log `docs/sessions/2026-02-25.md` with full context, git snapshot, run commands, CLI evidence, and warning explanations.
+- Updated `docs/03_search_pipeline.md` (new §0 Cleaned dataset, new §7 `--trace`), `docs/02_data_stats.md` (cleaned-dataset stats table), `docs/00_repo_map.md` (venv note, data files section).
+
+---
+
 ## 2026-02-23 — Session checkpoint
 
 Full session log (context, decisions, open items, resume instructions):

@@ -16,3 +16,9 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
+
+# Local AI/dev tooling (never push to shared repo)
+.claude/
+.cursor/
+.aider*
+.continue/
