@@ -163,6 +163,31 @@ python run_full_dataset.py
 
 ## Usage
 
+### Web UI (Flask server)
+
+You can run a small web app that wraps the search engine and serves a browser UI.
+
+**From the repo root (recommended):**
+
+```bash
+cd SkillRank            # repo root
+pip install -r search/requirements.txt   # or: pip3 install -r search/requirements.txt
+python search/app.py                    # or: python3 search/app.py
+```
+
+Then open `http://127.0.0.1:5000/` in your browser.
+
+- Type a natural-language query (e.g. "summarize long PDFs, extract tables from papers").
+- The UI calls `/api/search?q=...&k=5` on the Flask server, which runs `SkillSearchEngine` and shows cards for each skill (name, description, installs, first seen, score).
+
+You can also run from the `search/` directory:
+
+```bash
+cd search
+pip install -r requirements.txt   # or: pip3 install -r requirements.txt
+python app.py                     # or: python3 app.py
+```
+
 ### Command-Line Interface
 
 **Basic usage:**
@@ -223,8 +248,11 @@ for result in results:
 ```
 search/
 ├── __init__.py              # Package initialization
-├── requirements.txt         # Python dependencies
+├── requirements.txt         # Python dependencies (ML + Flask)
 ├── README.md               # This file
+├── app.py                  # Flask web app (/ and /api/search)
+├── templates/
+│   └── index.html          # Web UI page
 ├── data_loader.py          # Load and parse JSONL data
 ├── bm25_retriever.py       # BM25 keyword search
 ├── vector_retriever.py     # Semantic vector search

@@ -7,3 +7,6 @@ scikit-learn
 pandas
 python-dateutil
 nltk
+
+# Web UI
+flask>=3.0.0
