@@ -50,43 +50,74 @@ class SkillSearchEngine:
         self,
         bm25_results: List[Tuple[str, float]],
         vector_results: List[Tuple[str, float]]
-    ) -> List[Tuple[str, float]]:
+    ) -> List[Dict[str, Any]]:
         """
-        Merge and deduplicate results from BM25 and vector search.
-        
-        For duplicate skills, keep the higher score.
-        
+        Merge results from BM25 and vector search (union by skill name).
+        Retains both bm25_score and vector_score per candidate.
+
         Args:
             bm25_results: List of (skill_name, bm25_score) tuples
             vector_results: List of (skill_name, vector_score) tuples
-            
+
         Returns:
-            Merged list of (skill_name, score) tuples
+            List of candidate dicts: {"name", "bm25_score", "vector_score"}
+            (bm25_score or vector_score may be None if only in one retriever)
         """
-        # Use dictionary to track best score for each skill
         merged = {}
-        
-        # Add BM25 results
         for name, score in bm25_results:
-            merged[name] = score
-        
-        # Add vector results (keep higher score if duplicate)
+            merged[name] = {"name": name, "bm25_score": score, "vector_score": None}
         for name, score in vector_results:
             if name in merged:
-                merged[name] = max(merged[name], score)
+                merged[name]["vector_score"] = score
             else:
-                merged[name] = score
-        
-        # Convert back to list of tuples
-        return list(merged.items())
+                merged[name] = {"name": name, "bm25_score": None, "vector_score": score}
+        return list(merged.values())
     
+    def _print_trace(
+        self,
+        bm25_results: List[Tuple[str, float]],
+        vector_results: List[Tuple[str, float]],
+        merged_results: List[Dict[str, Any]],
+        reranked_results: List[Tuple[str, float, Dict[str, Any]]],
+    ) -> None:
+        """Print retrieval internals for --trace mode."""
+        W = 60
+        print("\n" + "=" * W)
+        print("TRACE: BM25 top 10")
+        print("=" * W)
+        for i, (name, score) in enumerate(bm25_results[:10], 1):
+            print(f"  {i:2}. {name:<45}  bm25={score:.4f}")
+
+        print("\n" + "=" * W)
+        print("TRACE: Vector top 10")
+        print("=" * W)
+        for i, (name, score) in enumerate(vector_results[:10], 1):
+            print(f"  {i:2}. {name:<45}  vec={score:.4f}")
+
+        print("\n" + "=" * W)
+        print(f"TRACE: Merged candidates total: {len(merged_results)}")
+        print("=" * W)
+
+        print("\n" + "=" * W)
+        print("TRACE: Top 10 after rerank")
+        print("=" * W)
+        for i, (name, final_score, bd) in enumerate(reranked_results[:10], 1):
+            print(
+                f"  {i:2}. {name:<45}  "
+                f"bm25_norm={bd['bm25_norm']:.3f}  "
+                f"vec_norm={bd['vector_norm']:.3f}  "
+                f"combined={bd['combined_retrieval']:.3f}  "
+                f"final={final_score:.4f}"
+            )
+
     def search(
         self,
         query: str,
         top_k: int = 3,
         bm25_top_k: int = 25,
         vector_top_k: int = 25,
-        verbose: bool = False
+        verbose: bool = False,
+        trace: bool = False,
     ) -> List[Dict[str, Any]]:
         """
         Search for skills using hybrid retrieval and reranking.
@@ -130,7 +161,10 @@ class SkillSearchEngine:
         if verbose:
             print(f"\nStep 4: Reranking with custom scoring...")
         reranked_results = self.reranker.rerank(query, merged_results)
-        
+
+        if trace:
+            self._print_trace(bm25_results, vector_results, merged_results, reranked_results)
+
         # Step 5: Get top_k results
         top_results = reranked_results[:top_k]
         

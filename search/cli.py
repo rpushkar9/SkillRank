@@ -123,6 +123,12 @@ Examples:
         default=None,
         help='Path to skills_raw.jsonl file (optional)'
     )
+
+    parser.add_argument(
+        '--trace',
+        action='store_true',
+        help='Print retrieval internals: top-10 BM25, top-10 vector, merged count, top-10 reranked'
+    )
     
     args = parser.parse_args()
     
@@ -139,7 +145,7 @@ Examples:
         if not args.names_only:
             print(f"\n🔍 Searching for: '{args.query}'")
         
-        results = engine.search(args.query, top_k=args.top_k, verbose=False)
+        results = engine.search(args.query, top_k=args.top_k, verbose=False, trace=args.trace)
         
         # Output results
         if args.names_only:
