@@ -32,6 +32,16 @@ class SearchExecutionError(AppError):
     error = "search_execution_error"
 
 
+class ProjectNotFoundError(AppError):
+    status_code = 404
+    error = "project_not_found"
+
+
+class RecommendExecutionError(AppError):
+    status_code = 500
+    error = "recommend_execution_error"
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Register handlers for domain exceptions."""
 

@@ -3,72 +3,68 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
-import { searchSkills } from "@/lib/search-client";
+import { recommendSkills } from "@/lib/recommend-client";
 import type { SearchResult } from "@/types/search";
 
-import styles from "./search-page.module.css";
-
-const DEFAULT_LIMIT = 5;
+import styles from "./recommend-page.module.css";
 
 function formatNumber(value: number): string {
   if (value >= 1_000_000) {
     return `${(value / 1_000_000).toFixed(1)}M`;
   }
-
   if (value >= 1_000) {
     return `${(value / 1_000).toFixed(1)}K`;
   }
-
   return String(value);
 }
 
 function truncate(text: string, length: number): string {
-  if (!text) {
-    return "";
-  }
-
-  if (text.length <= length) {
-    return text;
-  }
-
+  if (!text) return "";
+  if (text.length <= length) return text;
   return `${text.slice(0, length).trim()}...`;
 }
 
-export function SearchPage() {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("Type a query and search.");
+export function RecommendPage() {
+  const [folderPath, setFolderPath] = useState("");
+  const [status, setStatus] = useState("Enter your project folder path above.");
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasRecommended, setHasRecommended] = useState(false);
+  const [prompts, setPrompts] = useState<string[]>([]);
   const [results, setResults] = useState<SearchResult[]>([]);
 
-  async function runSearch(event?: FormEvent) {
+  async function runRecommend(event?: FormEvent) {
     event?.preventDefault();
 
-    const clean = query.trim();
+    const clean = folderPath.trim();
     if (!clean) {
       setError(false);
-      setStatus("Type a query first.");
+      setStatus("Enter a folder path first.");
       setResults([]);
-      setHasSearched(false);
+      setPrompts([]);
+      setHasRecommended(false);
       return;
     }
 
     setIsLoading(true);
     setError(false);
-    setStatus("Searching...");
+    setStatus("Reading conversation history...");
 
     try {
-      const payload = await searchSkills(clean, DEFAULT_LIMIT);
+      const payload = await recommendSkills(clean);
+      setPrompts(payload.prompts_used);
       setResults(payload.results);
-      setHasSearched(true);
-      setStatus(`Found ${payload.results.length} skill(s) in ${payload.took_ms.toFixed(1)} ms.`);
-    } catch (searchError) {
-      const message = searchError instanceof Error ? searchError.message : "Search failed.";
+      setHasRecommended(true);
+      setStatus(
+        `Found ${payload.results.length} skill(s) in ${payload.took_ms.toFixed(1)} ms.`
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Recommendation failed.";
       setError(true);
       setStatus(message);
       setResults([]);
-      setHasSearched(true);
+      setPrompts([]);
+      setHasRecommended(true);
     } finally {
       setIsLoading(false);
     }
@@ -79,39 +75,59 @@ export function SearchPage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <h1 className={styles.title}>SkillRank</h1>
-          <p className={styles.tagline}>Search for AI skills using natural language.</p>
+          <p className={styles.tagline}>
+            Get skill recommendations based on your recent AI conversations.
+          </p>
           <div className={styles.nav}>
-            <Link className={styles.navLink} href="/recommend">
-              Try Skills Recommender
+            <Link className={styles.navLink} href="/">
+              Search skills manually
             </Link>
           </div>
         </header>
 
-        <form className={styles.searchRow} onSubmit={runSearch}>
-          <label htmlFor="skill-query" className={styles.srOnly}>
-            Search query
+        <form className={styles.searchRow} onSubmit={runRecommend}>
+          <label htmlFor="folder-path" className={styles.srOnly}>
+            Project folder path
           </label>
           <input
-            id="skill-query"
+            id="folder-path"
             className={styles.searchInput}
             type="text"
-            placeholder="e.g. summarize long PDFs, extract tables from papers"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            placeholder="e.g. /Users/you/projects/my-project"
+            value={folderPath}
+            onChange={(e) => setFolderPath(e.target.value)}
             autoComplete="off"
           />
           <button className={styles.searchButton} type="submit" disabled={isLoading}>
-            {isLoading ? "Searching..." : "Search"}
+            {isLoading ? "Loading..." : "Get Recommendations"}
           </button>
         </form>
 
-        <div className={`${styles.status} ${error ? styles.statusError : ""}`} aria-live="polite">
+        <div
+          className={`${styles.status} ${error ? styles.statusError : ""}`}
+          aria-live="polite"
+        >
           {status}
         </div>
 
+        {hasRecommended && !error && prompts.length > 0 && (
+          <div className={styles.section}>
+            <p className={styles.sectionTitle}>Recent Prompts Used</p>
+            <ol className={styles.promptList}>
+              {prompts.map((prompt, i) => (
+                <li key={i} className={styles.promptItem}>
+                  {truncate(prompt, 200)}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         <div className={styles.results}>
-          {hasSearched && results.length === 0 && !isLoading ? (
-            <div className={styles.empty}>No skills found. Try rephrasing your task.</div>
+          {hasRecommended && results.length === 0 && !isLoading && !error ? (
+            <div className={styles.empty}>
+              No skills found for your recent prompts. Try a different project folder.
+            </div>
           ) : null}
 
           {results.map((result) => (
@@ -138,7 +154,12 @@ export function SearchPage() {
               </div>
 
               {result.skill_url ? (
-                <a className={styles.cardLink} href={result.skill_url} target="_blank" rel="noopener noreferrer">
+                <a
+                  className={styles.cardLink}
+                  href={result.skill_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   View skill
                 </a>
               ) : null}

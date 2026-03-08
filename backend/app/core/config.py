@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     skip_startup_checks: bool = False
     cors_allow_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
+    # Recommender
+    k_recent_prompts: int = 3
+    top_n_recommend: int = 5
+    claude_projects_base: str = ""
+
     model_config = SettingsConfigDict(
         env_file=BACKEND_ROOT / ".env",
         env_file_encoding="utf-8",
