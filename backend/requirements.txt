@@ -1,0 +1,15 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+pydantic==2.11.7
+pydantic-settings==2.10.1
+qdrant-client==1.17.0
+sentence-transformers==5.1.0
+numpy==1.26.4
+rank-bm25==0.2.2
+scikit-learn==1.7.1
+python-dotenv==1.1.1
+orjson==3.11.3
+httpx==0.28.1
+
+pytest==8.4.1
+pytest-asyncio==1.1.0
