@@ -75,15 +75,17 @@ export function RecommendPage() {
           <label htmlFor="folder-path" className={styles.srOnly}>
             Project folder path
           </label>
-          <input
-            id="folder-path"
-            className={styles.searchInput}
-            type="text"
-            placeholder="e.g. /Users/you/projects/my-project"
-            value={folderPath}
-            onChange={(e) => setFolderPath(e.target.value)}
-            autoComplete="off"
-          />
+          <div className={styles.searchInputWrap}>
+            <input
+              id="folder-path"
+              className={styles.searchInput}
+              type="text"
+              placeholder="e.g. /Users/you/projects/my-project"
+              value={folderPath}
+              onChange={(e) => setFolderPath(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
           <button
             className={styles.searchButton}
             type="submit"

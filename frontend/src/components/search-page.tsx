@@ -102,15 +102,17 @@ export function SearchPage() {
           <label htmlFor="skill-query" className={styles.srOnly}>
             Search query
           </label>
-          <input
-            id="skill-query"
-            className={styles.searchInput}
-            type="text"
-            placeholder="e.g. I want to build a portfolio website"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            autoComplete="off"
-          />
+          <div className={styles.searchInputWrap}>
+            <input
+              id="skill-query"
+              className={styles.searchInput}
+              type="text"
+              placeholder="e.g. I want to build a portfolio website"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              autoComplete="off"
+            />
+          </div>
           <button
             className={styles.searchButton}
             type="submit"

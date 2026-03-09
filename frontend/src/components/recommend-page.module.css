@@ -21,10 +21,19 @@
   font-size: 2.4rem;
   font-weight: 700;
   letter-spacing: -0.04em;
-  background: linear-gradient(135deg, #f1f5f9 30%, var(--accent) 100%);
+  background-image: linear-gradient(
+    90deg,
+    #f8fafc, #f8fafc 28%,
+    #60a5fa 40%,
+    #818cf8 50%,
+    #a78bfa 60%,
+    #f8fafc 72%, #f8fafc
+  );
+  background-size: 300% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: chroma-slide 8s ease-in-out infinite;
   margin: 0 0 0.3rem;
 }
 
@@ -73,8 +82,43 @@
   border: 0;
 }
 
-.searchInput {
+.searchInputWrap {
+  position: relative;
   flex: 1 1 220px;
+}
+
+.searchInputWrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--radius-sm) + 1px);
+  padding: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #60a5fa 25%,
+    #818cf8 50%,
+    #a78bfa 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  background-position: -200% 0;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--dur-base) ease;
+  pointer-events: none;
+}
+
+.searchInputWrap:focus-within::before {
+  opacity: 1;
+  animation: shimmer-sweep 2.2s ease-in-out infinite;
+}
+
+.searchInput {
+  width: 100%;
   height: 48px;
   padding: 0 0.9rem;
   border-radius: var(--radius-sm);
@@ -83,7 +127,7 @@
   color: var(--text);
   font-family: inherit;
   font-size: 0.95rem;
-  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-base) ease;
 }
 
 .searchInput::placeholder {
@@ -92,8 +136,8 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
+  border-color: hsl(228 100% 60% / 50%);
+  box-shadow: 0 0 0 3px hsl(228 100% 60% / 20%), 0 0 20px 0 hsl(228 100% 60% / 8%);
 }
 
 .searchButton {
