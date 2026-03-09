@@ -23,9 +23,26 @@
   margin-bottom: 2.25rem;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 0.25rem;
+.title {
+  font-family: 'Sora', system-ui, sans-serif;
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  background-image: linear-gradient(
+    90deg,
+    #f8fafc, #f8fafc 28%,
+    #60a5fa 40%,
+    #818cf8 50%,
+    #a78bfa 60%,
+    #f8fafc 72%, #f8fafc
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: chroma-slide 8s ease-in-out infinite;
+  margin: 0 0 0.5rem;
 }
 
 .tagline {
@@ -252,5 +269,5 @@
 }
 
 @media (max-width: 600px) {
-  .logo { transform: scale(0.8); transform-origin: center; }
+  .title { font-size: 2rem; }
 }

@@ -7,7 +7,6 @@ import { searchSkills } from "@/lib/search-client";
 import { formatNumber } from "@/lib/utils";
 import type { SearchResult } from "@/types/search";
 import { SkillCard, SkillCardSkeleton } from "@/components/skill-card";
-import { LogoParticles } from "@/components/ui/logo-particles";
 
 import styles from "./search-page.module.css";
 
@@ -89,8 +88,7 @@ export function SearchPage() {
     <div className={styles.screen}>
       <div className={styles.page}>
         <header className={styles.header}>
-          <LogoParticles text="SkillRank" width={340} height={80} className={styles.logo} />
-          <h1 className={styles.srOnly}>SkillRank</h1>
+          <h1 className={styles.title}>SkillRank</h1>
           <p className={styles.tagline}>Search for AI skills using natural language.</p>
         </header>
 
