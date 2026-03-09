@@ -1,0 +1,242 @@
+[
+  {
+    "query_id": "q01",
+    "query": "build ios app with swift and firebase authentication",
+    "relevant_ids": ["swiftui-expert-skill", "mobile-ios-design", "auth-implementation-patterns"],
+    "graded": {
+      "swiftui-expert-skill": 2,
+      "mobile-ios-design": 1,
+      "auth-implementation-patterns": 1
+    },
+    "category": "mobile-dev",
+    "in_dataset": true,
+    "notes": "Original GT expected firebase-auth/ios-swift-development/developing-ios-apps — none exist in the 921-skill corpus. Replaced with closest real skills."
+  },
+  {
+    "query_id": "q02",
+    "query": "react native expo push notifications setup",
+    "relevant_ids": ["react-native-expo", "building-native-ui", "react-native-architecture"],
+    "graded": {
+      "react-native-expo": 2,
+      "building-native-ui": 1,
+      "react-native-architecture": 1
+    },
+    "category": "mobile-dev",
+    "in_dataset": true,
+    "notes": "react-native-expo and building-native-ui exist. push-notification-setup is missing; react-native-architecture is the closest substitute."
+  },
+  {
+    "query_id": "q03",
+    "query": "summarize long research papers",
+    "relevant_ids": ["academic-writing-style", "content-research-writer", "latex-paper-en"],
+    "graded": {
+      "academic-writing-style": 2,
+      "content-research-writer": 1,
+      "latex-paper-en": 1
+    },
+    "category": "research",
+    "in_dataset": true,
+    "notes": "Original GT skills (research-paper-writer, scientific-writing, academic-research-writer) all missing. Replaced with dataset equivalents."
+  },
+  {
+    "query_id": "q04",
+    "query": "clean csv data and generate statistical report in python",
+    "relevant_ids": [],
+    "graded": {},
+    "category": "data-analysis",
+    "in_dataset": false,
+    "notes": "UNANSWERABLE: No skills covering CSV data cleaning or Python statistical reporting exist in the 921-skill corpus. All original GT skills (exploratory-data-analysis, csv-data-summarizer, pandas-data-analysis) are missing. System should return low-confidence results."
+  },
+  {
+    "query_id": "q05",
+    "query": "convert pdf to structured markdown with headings and citations",
+    "relevant_ids": ["baoyu-format-markdown", "baoyu-url-to-markdown"],
+    "graded": {
+      "baoyu-format-markdown": 2,
+      "baoyu-url-to-markdown": 1
+    },
+    "category": "document-processing",
+    "in_dataset": true,
+    "notes": "Original GT: pandoc, markdown-formatter, research-documentation — all missing. baoyu-format-markdown is a strong substitute; baoyu-url-to-markdown handles URL→markdown conversion."
+  },
+  {
+    "query_id": "q06",
+    "query": "generate blog post from bullet points with seo optimization",
+    "relevant_ids": ["seo-geo", "content-strategy", "pre-publish-post-assistant"],
+    "graded": {
+      "seo-geo": 2,
+      "content-strategy": 1,
+      "pre-publish-post-assistant": 1
+    },
+    "category": "content-creation",
+    "in_dataset": true,
+    "notes": "Original GT: blog-post, seo-content-writer, seo-content-optimizer — all missing. seo-geo covers SEO optimization; content-strategy covers content creation; pre-publish-post-assistant is a blog post prep tool."
+  },
+  {
+    "query_id": "q07",
+    "query": "automate github issue triage using ai agent",
+    "relevant_ids": ["github-issue-triage"],
+    "graded": {
+      "github-issue-triage": 2
+    },
+    "category": "devops",
+    "in_dataset": true,
+    "notes": "github-issue-triage exists and is an exact match. automate-github-issues and github-workflow-automation are missing from the corpus."
+  },
+  {
+    "query_id": "q08",
+    "query": "deploy dockerized fastapi app to aws with ci cd",
+    "relevant_ids": ["devops-engineer", "aws-skills"],
+    "graded": {
+      "devops-engineer": 2,
+      "aws-skills": 1
+    },
+    "category": "devops",
+    "in_dataset": true,
+    "notes": "Original GT: docker-deployment, github-actions, cicd-pipeline-setup — all missing. devops-engineer covers CI/CD pipelines; aws-skills covers AWS deployment."
+  },
+  {
+    "query_id": "q09",
+    "query": "build scalable design system with reusable react components",
+    "relevant_ids": ["design-system-patterns", "web-component-design", "design-systems"],
+    "graded": {
+      "design-system-patterns": 2,
+      "web-component-design": 2,
+      "design-systems": 1
+    },
+    "category": "frontend",
+    "in_dataset": true,
+    "notes": "design-system-patterns and web-component-design exist and are strong matches. design-system-starter is missing; design-systems is the closest substitute."
+  },
+  {
+    "query_id": "q10",
+    "query": "generate figma ui wireframes from product description",
+    "relevant_ids": ["wireframe-prototyping", "implement-design", "figma-implement-design"],
+    "graded": {
+      "wireframe-prototyping": 2,
+      "implement-design": 2,
+      "figma-implement-design": 1
+    },
+    "category": "design",
+    "in_dataset": true,
+    "notes": "wireframe-prototyping and implement-design exist. figma (bare name) missing; figma-implement-design is a strong substitute."
+  },
+  {
+    "query_id": "q11",
+    "query": "write unit tests for typescript react components",
+    "relevant_ids": ["vitest", "angular-testing", "bats-testing-patterns"],
+    "graded": {
+      "vitest": 2,
+      "angular-testing": 1,
+      "bats-testing-patterns": 1
+    },
+    "category": "testing",
+    "in_dataset": true,
+    "notes": "New query. vitest is the primary testing framework for React/Vite projects."
+  },
+  {
+    "query_id": "q12",
+    "query": "perform code review to find security issues and bugs",
+    "relevant_ids": ["code-review-pro", "code-review", "code-review-excellence"],
+    "graded": {
+      "code-review-pro": 2,
+      "code-review": 2,
+      "code-review-excellence": 1
+    },
+    "category": "code-quality",
+    "in_dataset": true,
+    "notes": "New query. code-review-pro explicitly covers security and performance; code-review is the direct match."
+  },
+  {
+    "query_id": "q13",
+    "query": "set up kubernetes cluster with helm charts for microservices",
+    "relevant_ids": ["kubernetes-specialist", "k8s-manifest-generator", "helm-chart-scaffolding"],
+    "graded": {
+      "kubernetes-specialist": 2,
+      "k8s-manifest-generator": 2,
+      "helm-chart-scaffolding": 2
+    },
+    "category": "devops",
+    "in_dataset": true,
+    "notes": "New query. All three skills are direct matches for Kubernetes + Helm deployment."
+  },
+  {
+    "query_id": "q14",
+    "query": "implement gitops workflow with argocd and flux",
+    "relevant_ids": ["gitops-workflow", "devops-engineer"],
+    "graded": {
+      "gitops-workflow": 2,
+      "devops-engineer": 1
+    },
+    "category": "devops",
+    "in_dataset": true,
+    "notes": "New query. gitops-workflow is a direct match; devops-engineer provides supporting context."
+  },
+  {
+    "query_id": "q15",
+    "query": "write email sequence for saas product launch marketing",
+    "relevant_ids": ["email-sequence", "content-repurposer"],
+    "graded": {
+      "email-sequence": 2,
+      "content-repurposer": 1
+    },
+    "category": "content-creation",
+    "in_dataset": true,
+    "notes": "New query. email-sequence is a direct match. content-repurposer can adapt existing content to email format."
+  },
+  {
+    "query_id": "q16",
+    "query": "repurpose youtube video transcript into blog post and social media content",
+    "relevant_ids": ["content-repurposer", "content-strategy"],
+    "graded": {
+      "content-repurposer": 2,
+      "content-strategy": 1
+    },
+    "category": "content-creation",
+    "in_dataset": true,
+    "notes": "New query. content-repurposer is explicitly designed for multi-format content transformation."
+  },
+  {
+    "query_id": "q17",
+    "query": "track user analytics events and conversion funnels in web app",
+    "relevant_ids": ["analytics-tracking"],
+    "graded": {
+      "analytics-tracking": 2
+    },
+    "category": "analytics",
+    "in_dataset": true,
+    "notes": "New query. analytics-tracking is a direct match. Limited corpus coverage for analytics tools."
+  },
+  {
+    "query_id": "q18",
+    "query": "improve my code",
+    "relevant_ids": ["code-review", "code-review-pro"],
+    "graded": {
+      "code-review": 1,
+      "code-review-pro": 1
+    },
+    "category": "vague",
+    "in_dataset": true,
+    "notes": "New query — intentionally vague. Any code improvement/review skill is marginally relevant (grade=1), but no perfect match (grade=2) because the intent is underdetermined."
+  },
+  {
+    "query_id": "q19",
+    "query": "help me with my project",
+    "relevant_ids": [],
+    "graded": {},
+    "category": "unanswerable",
+    "in_dataset": false,
+    "notes": "New query — intentionally unanswerable. Too vague to meaningfully match any skill. Any result is noise. System should ideally return very low scores."
+  },
+  {
+    "query_id": "q20",
+    "query": "write a business email responding to a client complaint",
+    "relevant_ids": ["email-sequence"],
+    "graded": {
+      "email-sequence": 1
+    },
+    "category": "non-dev",
+    "in_dataset": true,
+    "notes": "New query — non-developer use case. email-sequence is related but focused on marketing; no skill specifically covers business email writing. Partial credit only."
+  }
+]

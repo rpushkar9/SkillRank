@@ -1,0 +1,38 @@
+[
+  {
+    "scenario_id": "s01",
+    "name": "ios-firebase-project",
+    "description": "A developer working on an iOS app with Firebase authentication",
+    "fake_prompts": [
+      "add firebase auth to swift app",
+      "handle login state SwiftUI",
+      "configure firebase project in xcode"
+    ],
+    "expected_skills": ["swiftui-expert-skill", "mobile-ios-design", "auth-implementation-patterns"],
+    "notes": "Simulates a mobile developer context. Recommender should surface iOS and auth skills."
+  },
+  {
+    "scenario_id": "s02",
+    "name": "devops-kubernetes",
+    "description": "A DevOps engineer deploying microservices to Kubernetes",
+    "fake_prompts": [
+      "deploy microservice with helm chart",
+      "set up kubernetes ingress for api gateway",
+      "implement gitops workflow with argocd"
+    ],
+    "expected_skills": ["kubernetes-specialist", "helm-chart-scaffolding", "gitops-workflow"],
+    "notes": "Simulates a DevOps context. Recommender should surface K8s and GitOps skills."
+  },
+  {
+    "scenario_id": "s03",
+    "name": "content-creator",
+    "description": "A marketer repurposing content across channels",
+    "fake_prompts": [
+      "turn this blog post into a twitter thread",
+      "write email sequence for product launch",
+      "optimize my landing page for seo"
+    ],
+    "expected_skills": ["content-repurposer", "email-sequence", "seo-geo"],
+    "notes": "Simulates a non-developer content creation context. Tests domain coverage for marketing use cases."
+  }
+]
