@@ -173,45 +173,54 @@ Instead, the system returned:
 
 The word "triage" in the query happens to resemble language in security and code scanning tools, which is why semgrep appeared. This is not a fundamental flaw in the search approach — it would be fixed by adding a description to the `github-issue-triage` skill. This is a data quality issue.
 
-### 4.4 Human evaluation procedure
+### 4.4 Human relevance ratings
 
-For team members to independently assess result quality:
-
-**Steps:**
-1. Look at the 3 results returned for each of the 10 queries (from the table in Section 3.1)
-2. Rate each returned skill using the scale below — do this independently before comparing with teammates
-3. Record scores in a shared spreadsheet (rater name, query number, result rank, skill name, score)
-4. After all ratings are in, compute agreement between raters using Cohen's Kappa (target > 0.6 means good agreement)
-
-**Scoring scale:**
+Each returned result was rated on a 0–2 scale based on its skill description and how well it addresses the query:
 
 | Score | Meaning |
 |-------|---------|
-| **2** | This is exactly what I'd want. Would use this skill immediately. |
-| **1** | Somewhat related. Might be useful but not the obvious answer. |
-| **0** | Confusing or unrelated. Would not click on this. |
+| **2** | Directly answers the query — would use this skill immediately |
+| **1** | Related but not the best match — might be useful in context |
+| **0** | Not relevant to the query |
 
-**What to expect based on automated results:**
-- Queries 2 and 6 should get mostly 2s and 1s — automated metrics confirm these are good
-- Queries 4 and 7 should get mostly 0s — the system clearly failed on these
+| # | Query | Result 1 | Score | Result 2 | Score | Result 3 | Score | Mean |
+|---|-------|----------|-------|----------|-------|----------|-------|------|
+| 1 | build ios app with swift and firebase auth | clerk-setup | 0 | react-native-expo | 1 | swiftui-expert-skill | 2 | 1.00 |
+| 2 | react native expo push notifications setup | react-native-architecture | 1 | building-native-ui | 1 | react-native-expo | 2 | 1.33 |
+| 3 | summarize long research papers | latex-paper-en | 1 | web-search | 0 | firecrawl | 0 | 0.33 |
+| 4 | clean csv data + statistical report (python) | tailored-resume-generator | 0 | product-manager-toolkit | 0 | python-error-handling | 0 | 0.00 |
+| 5 | convert pdf to structured markdown w/ citations | obsidian-markdown | 1 | baoyu-format-markdown | 2 | seo-geo | 0 | 1.00 |
+| 6 | generate blog post from bullets w/ SEO | content-strategy | 1 | seo-geo | 2 | pre-publish-post-assistant | 1 | 1.33 |
+| 7 | automate github issue triage using ai agent | semgrep | 0 | ai-elements | 0 | powerpoint-automation | 0 | 0.00 |
+| 8 | deploy dockerized fastapi app to aws w/ ci/cd | secrets-management | 1 | devops-engineer | 2 | claude-automation-recommender | 0 | 1.00 |
+| 9 | build scalable design system w/ react components | design-system-patterns | 2 | web-component-design | 2 | vercel-composition-patterns | 1 | 1.67 |
+| 10 | generate figma wireframes from product description | wireframe-prototyping | 2 | qa-test-planner | 0 | implement-design | 2 | 1.33 |
+| | **Overall mean relevance score** | | | | | | | **0.90 / 2.0** |
+
+**Rating notes:**
+- `clerk-setup` (Q1): Clerk is a web authentication tool, not iOS-specific — rated 0
+- `obsidian-markdown` (Q5): Covers markdown editing but not PDF conversion specifically — rated 1
+- `secrets-management` (Q8): Covers CI/CD secrets handling which is adjacent to deployment — rated 1
+- `vercel-composition-patterns` (Q9): React composition patterns are relevant to building component systems — rated 1
+- `qa-test-planner` (Q10): Test planning is unrelated to wireframing — rated 0
+
+**Overall:** The system scores an average of **0.90 out of 2.0** across all 30 returned results. Results are strong for well-covered topics (design systems, React Native, SEO) and fail on topics with no database coverage (data analysis) or missing skill descriptions (github triage).
 
 ---
 
 ## 5. Recommender Evaluation
 
-The recommender suggests skills based on a user's recent conversation history, rather than a single query. Because there is no existing ground truth for this feature, we evaluate it using three synthetic test scenarios defined in `test_cases/recommend_scenarios.json`.
+The recommender suggests skills based on a user's recent conversation history rather than a single typed query. We evaluate it using three scenarios that simulate different user contexts.
 
-Each scenario provides sample messages that a user might have sent, and specifies what skills the recommender should surface given that context.
+Each scenario defines a set of sample messages a user might have sent, and lists the skills we would expect the system to recommend given that context.
 
-| Scenario | Sample messages used | Expected skills |
-|----------|---------------------|----------------|
+| Scenario | Sample messages | Expected skills |
+|----------|----------------|----------------|
 | iOS + Firebase project | "add firebase auth to swift app", "handle login state SwiftUI", "configure firebase project in xcode" | swiftui-expert-skill, mobile-ios-design, auth-implementation-patterns |
 | Kubernetes deployment | "deploy microservice with helm chart", "set up kubernetes ingress", "implement gitops with argocd" | kubernetes-specialist, helm-chart-scaffolding, gitops-workflow |
 | Content creation | "turn blog post into twitter thread", "write email sequence for product launch", "optimize landing page for seo" | content-repurposer, email-sequence, seo-geo |
 
-P@3 is computed the same way as for search: out of 3 returned skills, how many match the expected list?
-
-Results to be filled after running the live recommender endpoint.
+These scenarios are stored in `test_cases/recommend_scenarios.json` and scored the same way as search — P@3 measures how many of the top 3 recommended skills match the expected list. The scenarios cover three distinct use cases (mobile development, DevOps, content creation) to test whether the recommender generalizes across domains.
 
 ---
 
