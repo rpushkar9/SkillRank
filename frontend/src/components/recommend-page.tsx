@@ -61,7 +61,7 @@ export function RecommendPage() {
         <header className={styles.header}>
           <h1 className={styles.title}>SkillRank</h1>
           <p className={styles.tagline}>
-            Get skill recommendations based on your recent AI conversations.
+            Point to a project folder and get skill recommendations from your conversation history.
           </p>
         </header>
 

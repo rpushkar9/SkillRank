@@ -23,35 +23,28 @@ export function NavBar({ items, className }: NavBarProps) {
   const [activeTab, setActiveTab] = useState(
     items.find((i) => i.url === pathname)?.name ?? items[0].name
   )
-  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const match = items.find((i) => i.url === pathname)
     if (match) setActiveTab(match.name)
   }, [pathname, items])
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
-
   return (
-    <div
+    <nav
       className={cn(
-        "fixed bottom-0 sm:top-0 left-1/2 -translate-x-1/2 z-50 mb-6 sm:pt-6",
+        "fixed bottom-0 sm:top-0 left-1/2 -translate-x-1/2 z-50 mb-6 sm:mb-0 sm:pt-6",
         className,
       )}
     >
       <div
         style={{
-          background: "rgb(255 255 255 / 4%)",
-          border: "1px solid rgb(255 255 255 / 10%)",
+          background: "rgb(9 9 11 / 60%)",
+          border: "1px solid rgb(255 255 255 / 8%)",
           backdropFilter: "blur(16px)",
           WebkitBackdropFilter: "blur(16px)",
+          fontFamily: "'Geist', system-ui, sans-serif",
         }}
-        className="flex items-center gap-1 py-1 px-1 rounded-full shadow-lg"
+        className="flex items-center gap-0.5 py-1 px-1 rounded-full shadow-lg"
       >
         {items.map((item) => {
           const Icon = item.icon
@@ -62,26 +55,24 @@ export function NavBar({ items, className }: NavBarProps) {
               key={item.name}
               href={item.url}
               onClick={() => setActiveTab(item.name)}
-              style={{
-                color: isActive ? "#818cf8" : "#94a3b8",
-              }}
+              style={{ color: isActive ? "#f1f5f9" : "#64748b" }}
               className={cn(
-                "relative cursor-pointer text-sm font-semibold px-6 py-2 rounded-full transition-colors duration-200",
+                "relative cursor-pointer text-[13px] font-medium px-5 py-2 rounded-full transition-colors duration-200",
                 "hover:text-white",
               )}
             >
-              <span className="hidden md:inline">{item.name}</span>
-              <span className="md:hidden">
-                <Icon size={18} strokeWidth={2.5} />
+              <span className="hidden sm:inline">{item.name}</span>
+              <span className="sm:hidden">
+                <Icon size={16} strokeWidth={2} />
               </span>
 
               {isActive && (
                 <motion.div
                   layoutId="lamp"
                   className="absolute inset-0 w-full rounded-full -z-10"
-                  style={{ background: "rgb(129 140 248 / 8%)" }}
+                  style={{ background: "rgb(255 255 255 / 5%)" }}
                   initial={false}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
                 >
                   {/* Tubelight bar */}
                   <div
@@ -98,7 +89,7 @@ export function NavBar({ items, className }: NavBarProps) {
                     />
                     <div
                       className="absolute w-4 h-4 rounded-full blur-sm top-0 left-2"
-                      style={{ background: "rgb(129 140 248 / 20%)" }}
+                      style={{ background: "rgb(129 140 248 / 15%)" }}
                     />
                   </div>
                 </motion.div>
@@ -107,6 +98,6 @@ export function NavBar({ items, className }: NavBarProps) {
           )
         })}
       </div>
-    </div>
+    </nav>
   )
 }

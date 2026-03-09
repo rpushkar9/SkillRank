@@ -132,6 +132,14 @@ export function SearchPage() {
           </div>
         ) : null}
 
+        {/* Status line */}
+        <div
+          className={`${styles.status} ${error ? styles.statusError : ""}`}
+          aria-live="polite"
+        >
+          {status}
+        </div>
+
         {/* Skill cards */}
         <div className={styles.results}>
           {isLoading ? (
@@ -147,14 +155,6 @@ export function SearchPage() {
                 <SkillCard key={result.skill_id || result.name} result={result} rank={i + 1} />
               ))
             : null}
-        </div>
-
-        {/* Status line — below cards */}
-        <div
-          className={`${styles.status} ${error ? styles.statusError : ""}`}
-          aria-live="polite"
-        >
-          {status}
         </div>
 
         {/* Why these skills — loads after cards */}
