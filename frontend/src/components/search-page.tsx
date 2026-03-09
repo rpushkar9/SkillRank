@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
+import { explainSkills } from "@/lib/explain-client";
 import { searchSkills } from "@/lib/search-client";
 import type { SearchResult } from "@/types/search";
 
@@ -11,26 +12,14 @@ import styles from "./search-page.module.css";
 const DEFAULT_LIMIT = 5;
 
 function formatNumber(value: number): string {
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}K`;
-  }
-
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
   return String(value);
 }
 
 function truncate(text: string, length: number): string {
-  if (!text) {
-    return "";
-  }
-
-  if (text.length <= length) {
-    return text;
-  }
-
+  if (!text) return "";
+  if (text.length <= length) return text;
   return `${text.slice(0, length).trim()}...`;
 }
 
@@ -41,6 +30,10 @@ export function SearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [expandedQuery, setExpandedQuery] = useState<string | null>(null);
+  const [expandMs, setExpandMs] = useState<number | null>(null);
+  const [isExplaining, setIsExplaining] = useState(false);
+  const [explanationLines, setExplanationLines] = useState<string[]>([]);
 
   async function runSearch(event?: FormEvent) {
     event?.preventDefault();
@@ -50,26 +43,54 @@ export function SearchPage() {
       setError(false);
       setStatus("Type a query first.");
       setResults([]);
+      setExpandedQuery(null);
+      setExpandMs(null);
+      setExplanationLines([]);
       setHasSearched(false);
       return;
     }
 
+    // Reset state
     setIsLoading(true);
     setError(false);
-    setStatus("Searching...");
+    setStatus("Interpreting query...");
+    setResults([]);
+    setHasSearched(false);
+    setExpandedQuery(null);
+    setExpandMs(null);
+    setExplanationLines([]);
+    setIsExplaining(false);
 
     try {
+      // Phase 1: search (expand + embed + Qdrant)
       const payload = await searchSkills(clean, DEFAULT_LIMIT);
       setResults(payload.results);
+      setExpandedQuery(payload.expanded_query ?? null);
+      setExpandMs(payload.expand_ms ?? null);
       setHasSearched(true);
-      setStatus(`Found ${payload.results.length} skill(s) in ${payload.took_ms.toFixed(1)} ms.`);
+      setStatus(
+        `Found ${payload.results.length} skill(s) | Search: ${payload.took_ms.toFixed(0)} ms`
+      );
+      setIsLoading(false);
+
+      // Phase 2: explain (async, runs after cards are visible)
+      if (payload.results.length > 0) {
+        setIsExplaining(true);
+        try {
+          const exp = await explainSkills(clean, payload.results);
+          setExplanationLines(exp.lines);
+        } catch {
+          // explanation failure is silent
+        } finally {
+          setIsExplaining(false);
+        }
+      }
     } catch (searchError) {
       const message = searchError instanceof Error ? searchError.message : "Search failed.";
       setError(true);
       setStatus(message);
       setResults([]);
       setHasSearched(true);
-    } finally {
       setIsLoading(false);
     }
   }
@@ -95,7 +116,7 @@ export function SearchPage() {
             id="skill-query"
             className={styles.searchInput}
             type="text"
-            placeholder="e.g. summarize long PDFs, extract tables from papers"
+            placeholder="e.g. I want to build a portfolio website"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             autoComplete="off"
@@ -105,10 +126,22 @@ export function SearchPage() {
           </button>
         </form>
 
-        <div className={`${styles.status} ${error ? styles.statusError : ""}`} aria-live="polite">
-          {status}
-        </div>
+        {/* Interpreted as */}
+        {expandedQuery ? (
+          <div className={styles.expandedQuery}>
+            <span className={styles.expandedLabel}>Interpreted as:</span>
+            {expandedQuery}
+          </div>
+        ) : null}
 
+        {/* Query expansion timing */}
+        {expandMs != null ? (
+          <div className={styles.expandTiming}>
+            Query expansion: {expandMs.toFixed(0)} ms
+          </div>
+        ) : null}
+
+        {/* Skill cards */}
         <div className={styles.results}>
           {hasSearched && results.length === 0 && !isLoading ? (
             <div className={styles.empty}>No skills found. Try rephrasing your task.</div>
@@ -138,13 +171,50 @@ export function SearchPage() {
               </div>
 
               {result.skill_url ? (
-                <a className={styles.cardLink} href={result.skill_url} target="_blank" rel="noopener noreferrer">
+                <a
+                  className={styles.cardLink}
+                  href={result.skill_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   View skill
                 </a>
               ) : null}
             </article>
           ))}
         </div>
+
+        {/* Status line — below cards */}
+        {hasSearched ? (
+          <div
+            className={`${styles.status} ${error ? styles.statusError : ""}`}
+            aria-live="polite"
+          >
+            {status}
+          </div>
+        ) : (
+          <div className={styles.status} aria-live="polite">
+            {status}
+          </div>
+        )}
+
+        {/* Why these skills — loads after cards */}
+        {(isExplaining || explanationLines.length > 0) && results.length > 0 ? (
+          <div className={styles.explanationCard}>
+            <p className={styles.explanationLabel}>Why these skills?</p>
+            {isExplaining && explanationLines.length === 0 ? (
+              <p className={styles.explanationLoading}>Generating explanation...</p>
+            ) : (
+              <ul className={styles.explanationList}>
+                {explanationLines.map((line, i) => (
+                  <li key={i} className={styles.explanationLine}>
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

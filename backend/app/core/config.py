@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     top_n_recommend: int = 5
     claude_projects_base: str = ""
 
+    # Ollama
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen3:0.6b"
+    ollama_timeout_s: float = 20.0
+    ollama_enabled: bool = True
+
     model_config = SettingsConfigDict(
         env_file=BACKEND_ROOT / ".env",
         env_file_encoding="utf-8",

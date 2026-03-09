@@ -25,3 +25,5 @@ class SearchResponse(BaseModel):
     total: int
     results: list[SearchResult]
     took_ms: float
+    expanded_query: str | None = None
+    expand_ms: float | None = None

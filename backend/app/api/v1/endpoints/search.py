@@ -33,7 +33,7 @@ def search(
         k = settings.max_top_k
 
     start = time.perf_counter()
-    results = search_service.search(query=q, k=k)
+    results, expanded_query, expand_ms, search_ms = search_service.search(query=q, k=k)
     took_ms = (time.perf_counter() - start) * 1000.0
 
     return SearchResponse(
@@ -41,4 +41,6 @@ def search(
         total=len(results),
         results=results,
         took_ms=round(took_ms, 2),
+        expanded_query=expanded_query,
+        expand_ms=expand_ms,
     )

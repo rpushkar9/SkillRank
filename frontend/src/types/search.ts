@@ -14,4 +14,6 @@ export interface SearchResponse {
   total: number;
   results: SearchResult[];
   took_ms: number;
+  expanded_query?: string | null;
+  expand_ms?: number | null;
 }
