@@ -6,6 +6,7 @@ import { recommendSkills } from "@/lib/recommend-client";
 import { truncate } from "@/lib/utils";
 import type { SearchResult } from "@/types/search";
 import { SkillCard, SkillCardSkeleton } from "@/components/skill-card";
+import { LogoParticles } from "@/components/ui/logo-particles";
 
 import styles from "./recommend-page.module.css";
 
@@ -59,7 +60,8 @@ export function RecommendPage() {
     <div className={styles.screen}>
       <div className={styles.page}>
         <header className={styles.header}>
-          <h1 className={styles.title}>SkillRank</h1>
+          <LogoParticles text="SkillRank" width={340} height={80} className={styles.logo} />
+          <h1 className={styles.srOnly}>SkillRank</h1>
           <p className={styles.tagline}>
             Point to a project folder and get skill recommendations from your conversation history.
           </p>
