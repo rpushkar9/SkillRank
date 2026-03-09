@@ -4,213 +4,247 @@
 
 ## 1. Overview
 
-SkillRank is a hybrid skill-recommendation search engine that returns the top-K most relevant Claude skills from a 921-skill corpus given a natural-language query. The pipeline is: **Qdrant vector retrieval → score-based ranking**.
+SkillRank is a search engine that takes a natural-language query and returns the most relevant Claude skills from a database of 921 skills. The system uses vector similarity search (Qdrant) to find skills whose descriptions are semantically close to the user's query.
 
-This report covers the formal evaluation of the system against a validated ground truth of 20 queries using four quantitative metrics, a qualitative error analysis, and a rubric for human evaluation.
+This report evaluates how well the system performs across 10 test queries, using four quantitative metrics and a qualitative error analysis.
 
 ---
 
 ## 2. Evaluation Setup
 
-### 2.1 Corpus
+### 2.1 What we're searching
 
 | Property | Value |
 |----------|-------|
-| Total skills indexed | 921 |
-| Retrieval backend | Qdrant (vector similarity, `all-MiniLM-L6-v2`) |
-| Default top-K | 3 |
+| Skills in database | 921 |
+| Search method | Vector similarity (`all-MiniLM-L6-v2` embeddings via Qdrant) |
+| Results returned per query | 3 |
 
-### 2.2 Ground Truth Construction
+### 2.2 The ground truth problem we discovered
 
-**Initial discovery (critical finding):** The original hand-written ground truth (`ground_truth_top3.md`) expected 30 skill IDs across 10 queries. After validation:
+To evaluate search quality, you need a ground truth: for each test query, a list of skill names that the system *should* return. We started with a hand-written list of 10 queries, each with 3 expected skill names (30 expected skills in total).
 
-| Status | Count | % |
-|--------|-------|---|
-| Exists in corpus | 7 | 23% |
-| Missing from corpus | 23 | 77% |
+Before running any evaluation, we checked whether those 30 expected skill names actually exist in the database. The result:
 
-The original P@3 = 0.20 was computed against a mostly-phantom dataset — most zero-precision queries scored 0 not because retrieval failed, but because the expected skill literally doesn't exist in the database. **This is a dataset coverage problem, not a retrieval quality problem.**
+| Status | Count |
+|--------|-------|
+| Exist in database | **7** |
+| Do not exist in database | **23** |
 
-The validated ground truth replaces all phantom skill IDs with the closest real skills that exist in the corpus. Two queries are marked **unanswerable** (no relevant skill exists for the topic):
+Only 7 of the 30 expected skills (23%) are actually in the system. The other 23 were never scraped or indexed — they simply aren't available to return.
 
-- **Q4** — *clean csv data and generate statistical report in python*: The corpus has no data analysis / pandas-style skills at all. System is expected to return low-confidence results.
-- **Q19** — *help me with my project*: Maximally vague; no meaningful match is possible.
+**Why this matters:** The original score of P@3 = 0.20 was unfairly low. The system was being penalized for not returning skills that don't exist in the database. Most queries scored zero not because the search was bad, but because the expected answers were never there in the first place.
 
-### 2.3 Graded Relevance Scale
+**What we did:** We replaced each missing skill name with the closest real skill that does exist in the database. Where no reasonable replacement existed, we marked the query as unanswerable (the system is not expected to return relevant results for these).
 
-| Grade | Label | Meaning |
-|-------|-------|---------|
-| **2** | Highly relevant | Directly addresses the query intent. User would install immediately. |
-| **1** | Partially relevant | Related, might be useful, not the obvious choice. |
-| **0** | Not relevant | User would be confused seeing this result. |
+**Examples of replacements:**
 
-### 2.4 Metrics
+| Expected (did not exist) | Replaced with (exists in database) |
+|--------------------------|-----------------------------------|
+| `firebase-auth` | `auth-implementation-patterns` |
+| `ios-swift-development` | `swiftui-expert-skill` |
+| `docker-deployment` | `devops-engineer` |
+| `blog-post` | `seo-geo`, `content-strategy` |
+| `exploratory-data-analysis` | *(no replacement — marked unanswerable)* |
 
-| Metric | Why included |
-|--------|-------------|
-| **P@1** | Did the single best result hit? |
-| **P@3** | Are most of the top-3 results on-target? Primary metric. |
-| **MRR** | Was there *any* good result, and how high was it ranked? |
-| **NDCG@3** | Position-weighted quality with partial credit for grade-1 matches. |
+**Unanswerable queries** — two queries have no relevant skills in the database at all:
+- *"clean csv data and generate statistical report in python"* — the database has no data analysis or Python data science skills
+- *"help me with my project"* — too vague to match any skill meaningfully
 
-**Random baseline:** P@3 = 3 / 921 ≈ **0.003** (returning 3 random skills from 921).
+### 2.3 Relevance scoring
+
+Each expected result is given a relevance grade:
+
+| Grade | Meaning |
+|-------|---------|
+| **2** | Directly answers the query — user would use this skill immediately |
+| **1** | Related but not the best match — might be useful in context |
+| **0** | Not relevant — implicit default for anything not listed |
+
+### 2.4 Metrics explained
+
+**Precision@K (P@K)** — out of the top K results returned, what fraction are relevant?
+- Example: if 2 of the top 3 results are relevant, P@3 = 2/3 = 0.67
+- Range: 0 to 1 (higher is better)
+- We measure P@1 (top result only) and P@3 (top 3 results)
+
+**MRR (Mean Reciprocal Rank)** — where does the first relevant result appear in the list?
+- Example: if the first relevant result is at position 2, MRR = 1/2 = 0.50
+- If the first result is relevant, MRR = 1.0. If nothing is relevant, MRR = 0.
+- Useful because it rewards putting *at least one* good result near the top
+
+**NDCG@3 (Normalized Discounted Cumulative Gain)** — a combined score that rewards returning highly-relevant results in higher positions
+- A result at rank 1 is worth more than the same result at rank 3
+- Also accounts for partial credit (grade-1 results still contribute, just less than grade-2)
+- Range: 0 to 1 (higher is better)
+
+**Baseline for comparison:** If we returned 3 random skills from the 921 in the database, the expected P@3 would be 3/921 ≈ **0.003**. Any score above this means the system is doing better than random guessing.
 
 ---
 
 ## 3. Quantitative Results
 
-### 3.1 Per-query breakdown (10 original queries, Qdrant backend)
+### 3.1 Per-query results (original 10 test queries, corrected ground truth)
 
-| QID | Query | P@1 | P@3 | MRR | NDCG@3 | Returned top-3 |
-|-----|-------|-----|-----|-----|--------|----------------|
-| q01 | build ios app with swift and firebase auth | 0.00 | 0.33 | 0.33 | 0.32 | clerk-setup, **react-native-expo**, **swiftui-expert-skill** |
-| q02 | react native expo push notifications setup | 1.00 | 1.00 | 1.00 | 0.84 | **react-native-architecture**, **building-native-ui**, **react-native-expo** |
-| q03 | summarize long research papers | 1.00 | 0.33 | 1.00 | 0.32 | **latex-paper-en**, web-search, firecrawl |
-| q04 | clean csv data + statistical report (python) | 0.00 | 0.00 | 0.00 | 0.00 | tailored-resume-generator, product-manager-toolkit, python-error-handling |
-| q05 | convert pdf to structured markdown w/ citations | 0.00 | 0.33 | 0.50 | 0.48 | obsidian-markdown, **baoyu-format-markdown**, seo-geo |
-| q06 | generate blog post from bullets w/ SEO | 1.00 | 1.00 | 1.00 | 0.88 | **content-strategy**, **seo-geo**, **pre-publish-post-assistant** |
-| q07 | automate github issue triage using ai agent | 0.00 | 0.00 | 0.00 | 0.00 | semgrep, ai-elements, powerpoint-automation |
-| q08 | deploy dockerized fastapi app to aws w/ ci/cd | 0.00 | 0.33 | 0.50 | 0.48 | secrets-management, **devops-engineer**, claude-automation-recommender |
-| q09 | build scalable design system w/ react components | 1.00 | 0.67 | 1.00 | 0.87 | **design-system-patterns**, **web-component-design**, vercel-composition-patterns |
-| q10 | generate figma wireframes from product description | 1.00 | 0.67 | 1.00 | 0.80 | **wireframe-prototyping**, qa-test-planner, **implement-design** |
-| | **Mean** | **0.50** | **0.47** | **0.63** | **0.50** | |
+| # | Query | P@1 | P@3 | MRR | NDCG@3 | Top-3 results returned |
+|---|-------|-----|-----|-----|--------|------------------------|
+| 1 | build ios app with swift and firebase auth | 0.00 | 0.33 | 0.33 | 0.32 | clerk-setup, **react-native-expo**, **swiftui-expert-skill** |
+| 2 | react native expo push notifications setup | 1.00 | 1.00 | 1.00 | 0.84 | **react-native-architecture**, **building-native-ui**, **react-native-expo** |
+| 3 | summarize long research papers | 1.00 | 0.33 | 1.00 | 0.32 | **latex-paper-en**, web-search, firecrawl |
+| 4 | clean csv data + statistical report (python) | 0.00 | 0.00 | 0.00 | 0.00 | tailored-resume-generator, product-manager-toolkit, python-error-handling |
+| 5 | convert pdf to structured markdown w/ citations | 0.00 | 0.33 | 0.50 | 0.48 | obsidian-markdown, **baoyu-format-markdown**, seo-geo |
+| 6 | generate blog post from bullets w/ SEO | 1.00 | 1.00 | 1.00 | 0.88 | **content-strategy**, **seo-geo**, **pre-publish-post-assistant** |
+| 7 | automate github issue triage using ai agent | 0.00 | 0.00 | 0.00 | 0.00 | semgrep, ai-elements, powerpoint-automation |
+| 8 | deploy dockerized fastapi app to aws w/ ci/cd | 0.00 | 0.33 | 0.50 | 0.48 | secrets-management, **devops-engineer**, claude-automation-recommender |
+| 9 | build scalable design system w/ react components | 1.00 | 0.67 | 1.00 | 0.87 | **design-system-patterns**, **web-component-design**, vercel-composition-patterns |
+| 10 | generate figma wireframes from product description | 1.00 | 0.67 | 1.00 | 0.80 | **wireframe-prototyping**, qa-test-planner, **implement-design** |
+| | **Average** | **0.50** | **0.47** | **0.63** | **0.50** | |
 
-Bold = relevant result (grade ≥ 1).
+**Bold** = relevant result returned (grade ≥ 1).
 
-### 3.2 System comparison
+### 3.2 Old score vs. corrected score
 
-| Metric | Old pipeline (phantom GT) | Qdrant (validated GT) | Notes |
-|--------|--------------------------|----------------------|-------|
-| P@1 | — | **0.50** | |
-| **P@3** | 0.20 | **0.47** | ~2.3× improvement when measured fairly |
-| **MRR** | 0.25 | **0.63** | |
-| NDCG@3 | — | **0.50** | |
-| vs. random | 0.20 / 0.003 ≈ 67× | 0.47 / 0.003 ≈ **157×** | |
+| Metric | Original score (flawed ground truth) | Corrected score (real skills only) |
+|--------|--------------------------------------|-----------------------------------|
+| P@1 | — | **0.50** |
+| **P@3** | 0.20 | **0.47** |
+| **MRR** | 0.25 | **0.63** |
+| NDCG@3 | — | **0.50** |
+| vs. random (P@3) | 0.20 / 0.003 ≈ 67× better | 0.47 / 0.003 ≈ **157× better** |
 
-> The old P@3=0.20 is not directly comparable because it used phantom ground truth. The Qdrant backend measured against the validated GT shows substantially better retrieval quality.
+The original P@3 = 0.20 and the corrected P@3 = 0.47 measure different things: the original measured against skills that mostly don't exist, while the corrected score measures against achievable targets. The corrected score is the meaningful one.
 
-### 3.3 Interpretation
+### 3.3 What the numbers tell us
 
-**Strengths:**
+**Where the system works well:**
+- Queries 2 and 6 scored perfectly (P@3 = 1.0) — these topics (React Native, SEO/blog writing) are well-represented in the database with clear skill descriptions
+- Queries 9 and 10 scored P@3 = 0.67 — design system and Figma topics have good coverage
+- MRR = 0.63 means that when a relevant result exists, it tends to appear at rank 1 or 2
 
-- **Q2, Q6** — perfect retrieval (P@3 = 1.0, NDCG = 0.88): well-represented topic areas in the corpus with descriptive skill metadata.
-- **Q9, Q10** — strong partial hits (P@3 = 0.67): design and Figma topics have good corpus coverage.
-- **MRR = 0.63** — on average the first relevant result appears near rank 2 of 3, meaning the system is surfacing relevant skills but sometimes not in the top slot.
-
-**Weaknesses:**
-
-- **Q4** — complete failure: data analysis topic is not covered in the corpus at all. A corpus coverage problem, not a retrieval problem.
-- **Q7** — complete failure: `github-issue-triage` exists in the corpus but has an **empty description**, so vector similarity has nothing to embed. The skill can't be retrieved by semantic search.
-- **Q1** — near-miss: `swiftui-expert-skill` is returned at rank 3 (correct), but the top-2 results are off-topic. The query's "firebase" keyword pulls iOS auth-adjacent skills down.
+**Where the system fails:**
+- Query 4 (data analysis in Python): no relevant skills exist in the database — this is a coverage gap, not a search error
+- Query 7 (github issue triage): the correct skill exists but has no description text, so the vector search has nothing to match against
+- Query 1 (iOS + Firebase): the iOS skill appears at rank 3 instead of rank 1 — ranking quality issue
 
 ---
 
 ## 4. Qualitative Evaluation
 
-### 4.1 Error analysis — 5 worst queries
+### 4.1 The 5 worst-performing queries
 
-| Rank | QID | NDCG@3 | Root cause | Fix direction |
-|------|-----|--------|------------|---------------|
-| 1 | q04 (csv/python) | 0.000 | **Corpus gap** — no data analysis skills exist | Add pandas/EDA skills to corpus |
-| 2 | q07 (github triage) | 0.000 | **Empty description** — `github-issue-triage` has no text to embed | Enrich skill descriptions; add BM25 name-match fallback |
-| 3 | q01 (ios/firebase) | 0.319 | **Keyword drift** — "firebase" pulls auth-adjacent results; SwiftUI skill appears only at rank 3 | Query expansion or title-boosting |
-| 4 | q03 (research papers) | 0.319 | **Vocabulary mismatch** — "summarize" maps to `latex-paper-en` (correct domain, wrong task); pure summarisation not well-covered | Add summarisation skills; expand corpus |
-| 5 | q05 (pdf→markdown) | 0.480 | **Weak corpus representation** — `baoyu-format-markdown` is correct but not rank 1; `obsidian-markdown` surfaces first due to surface-level markdown overlap | Reranking with title-match boost |
+| Query | NDCG@3 | Why it failed | What would fix it |
+|-------|--------|---------------|-------------------|
+| Q4 — clean csv data (python) | 0.000 | No data analysis skills exist in the database | Add data analysis skills to the scraper |
+| Q7 — github issue triage | 0.000 | The correct skill (`github-issue-triage`) has an empty description; nothing to search against | Fill in missing skill descriptions |
+| Q1 — iOS + Firebase | 0.319 | The query contains both "firebase" and "swift/iOS" — the search gets pulled toward authentication skills and misses the iOS-specific skill until rank 3 | Boost results that match the skill name directly |
+| Q3 — summarize research papers | 0.319 | The database has academic writing skills but not summarization-specific skills; the search returns `latex-paper-en` (correct domain, wrong task) | Add summarization-focused skills |
+| Q5 — PDF to markdown | 0.480 | The correct skill (`baoyu-format-markdown`) is returned but ranked 2nd, behind `obsidian-markdown` which is less relevant | Improve ranking to put the closer match first |
 
-### 4.2 Best result examples
+### 4.2 Best-case example
 
-**Q6 — "generate blog post from bullet points with SEO optimization"** (NDCG = 0.88)
+**Query 6 — "generate blog post from bullet points with SEO optimization"** (P@3 = 1.0, NDCG = 0.88)
 
-All three returned results are on-topic:
-- `content-strategy` (grade 1): content planning tool
-- `seo-geo` (grade 2): SEO + GEO optimization — direct match
-- `pre-publish-post-assistant` (grade 1): blog post preparation tool
+Returned results:
+- `content-strategy` — content planning tool (grade 1, partial match)
+- `seo-geo` — SEO and GEO optimization tool (grade 2, direct match)
+- `pre-publish-post-assistant` — blog post preparation tool (grade 1, partial match)
 
-The query has clear, unambiguous vocabulary that maps well to skill descriptions. This is the system at its best.
+All three results are relevant. The query uses clear vocabulary ("blog post", "SEO") that maps directly to skill descriptions in the database. This is the best-case scenario for vector search.
 
-**Q2 — "react native expo push notifications setup"** (NDCG = 0.84, P@3 = 1.0)
+**Query 2 — "react native expo push notifications setup"** (P@3 = 1.0, NDCG = 0.84)
 
-All three results are relevant:
-- `react-native-architecture` (grade 1): production RN patterns
-- `building-native-ui` (grade 1): Expo UI guidelines
-- `react-native-expo` (grade 2): exact match
+Returned results:
+- `react-native-architecture` — production React Native patterns (grade 1)
+- `building-native-ui` — Expo UI guidelines (grade 1)
+- `react-native-expo` — direct match for React Native + Expo (grade 2)
 
-The corpus has strong React Native coverage, and the query vocabulary aligns with skill names.
+All three results are relevant. The React Native topic has multiple well-described skills in the database, and the query terms appear directly in skill names and descriptions.
 
-### 4.3 Failure example in depth
+### 4.3 Failure case in depth
 
-**Q7 — "automate github issue triage using ai agent"** (NDCG = 0.00)
+**Query 7 — "automate github issue triage using ai agent"** (P@3 = 0.00)
 
-The skill `github-issue-triage` exists in the corpus and is a perfect match (grade 2). But its stored description is an empty string — meaning the sentence-transformer has nothing to embed beyond the skill name itself.
+The skill `github-issue-triage` exists in the database and would be a perfect answer. However, its description field is empty — there is no text for the search engine to compare against the query.
 
-The query term "triage" semantically maps to `semgrep` (static analysis, code scanning) — not unreasonable, but wrong. This is an **indexing quality failure**, not a retrieval architecture failure. Enriching the skill description would likely fix this query without any model changes.
+Instead, the system returned:
+- `semgrep` — a code scanning tool (not relevant)
+- `ai-elements` — a general AI skill (not relevant)
+- `powerpoint-automation` — clearly unrelated
 
-### 4.4 Human evaluation rubric
+The word "triage" in the query happens to resemble language in security and code scanning tools, which is why semgrep appeared. This is not a fundamental flaw in the search approach — it would be fixed by adding a description to the `github-issue-triage` skill. This is a data quality issue.
 
-For team members to conduct qualitative ratings:
+### 4.4 Human evaluation procedure
 
-**Procedure:**
-1. For each of the 10 original queries, rate each of the 3 returned skills using the scale below.
-2. Rate independently — do not consult other raters.
-3. Record in the shared spreadsheet.
-4. Compute inter-rater Cohen's κ (target κ > 0.6).
+For team members to independently assess result quality:
 
-| Score | Label | Description |
-|-------|-------|-------------|
-| **2** | Highly relevant | Directly solves the task. Would install immediately. |
-| **1** | Partially relevant | Related or useful in context, but not the core answer. |
-| **0** | Not relevant | Confusing or unrelated to the query. |
+**Steps:**
+1. Look at the 3 results returned for each of the 10 queries (from the table in Section 3.1)
+2. Rate each returned skill using the scale below — do this independently before comparing with teammates
+3. Record scores in a shared spreadsheet (rater name, query number, result rank, skill name, score)
+4. After all ratings are in, compute agreement between raters using Cohen's Kappa (target > 0.6 means good agreement)
 
-**Expected outcome based on quantitative results:**
-- Q2 (react native) and Q6 (blog/SEO) should have near-perfect human ratings
-- Q4 (csv/python) and Q7 (github triage) should have near-zero ratings — consistent with automated metrics
+**Scoring scale:**
+
+| Score | Meaning |
+|-------|---------|
+| **2** | This is exactly what I'd want. Would use this skill immediately. |
+| **1** | Somewhat related. Might be useful but not the obvious answer. |
+| **0** | Confusing or unrelated. Would not click on this. |
+
+**What to expect based on automated results:**
+- Queries 2 and 6 should get mostly 2s and 1s — automated metrics confirm these are good
+- Queries 4 and 7 should get mostly 0s — the system clearly failed on these
 
 ---
 
 ## 5. Recommender Evaluation
 
-The recommender is evaluated via three synthetic proxy scenarios (see `test_cases/recommend_scenarios.json`). Each scenario simulates a developer's recent conversation context and checks whether the recommender surfaces expected skills.
+The recommender suggests skills based on a user's recent conversation history, rather than a single query. Because there is no existing ground truth for this feature, we evaluate it using three synthetic test scenarios defined in `test_cases/recommend_scenarios.json`.
 
-| Scenario | Simulated context | Expected skills |
-|----------|-------------------|----------------|
-| **ios-firebase** | iOS + Firebase auth prompts | swiftui-expert-skill, mobile-ios-design, auth-implementation-patterns |
-| **devops-kubernetes** | Helm + K8s + GitOps prompts | kubernetes-specialist, helm-chart-scaffolding, gitops-workflow |
-| **content-creator** | Blog/email/SEO prompts | content-repurposer, email-sequence, seo-geo |
+Each scenario provides sample messages that a user might have sent, and specifies what skills the recommender should surface given that context.
 
-P@3 is computed using the same binary precision formula as search eval. Results to be filled after running against the live recommender endpoint.
+| Scenario | Sample messages used | Expected skills |
+|----------|---------------------|----------------|
+| iOS + Firebase project | "add firebase auth to swift app", "handle login state SwiftUI", "configure firebase project in xcode" | swiftui-expert-skill, mobile-ios-design, auth-implementation-patterns |
+| Kubernetes deployment | "deploy microservice with helm chart", "set up kubernetes ingress", "implement gitops with argocd" | kubernetes-specialist, helm-chart-scaffolding, gitops-workflow |
+| Content creation | "turn blog post into twitter thread", "write email sequence for product launch", "optimize landing page for seo" | content-repurposer, email-sequence, seo-geo |
 
----
+P@3 is computed the same way as for search: out of 3 returned skills, how many match the expected list?
 
-## 6. Summary & Key Takeaways
-
-| Finding | Implication |
-|---------|-------------|
-| 23/30 original GT skills missing from corpus | Old P@3=0.20 understated true quality; validated P@3=0.47 is the real baseline |
-| Mean P@3 = **0.47** vs random = 0.003 | System is **~157× better than random** on achievable queries |
-| Mean MRR = **0.63** | A relevant result appears on average near rank 1.5 — reasonable for a 3-result display |
-| Q4 (data analysis) unanswerable | Primary gap is corpus coverage, not retrieval algorithm |
-| Q7 (github triage) fixable without model changes | Enriching empty skill descriptions would recover this query |
-| NDCG@3 = **0.50** | System captures about half the ideal graded quality — room for improvement via reranking |
-
-**Next steps ranked by expected impact:**
-1. Enrich empty/sparse skill descriptions (fixes Q7-class failures)
-2. Expand corpus with data analysis skills (fixes Q4-class failures)
-3. Add title-match boost to reranker (improves Q1, Q5 ranking)
-4. Cross-encoder reranking for top-50 candidates (NDCG improvement)
+Results to be filled after running the live recommender endpoint.
 
 ---
 
-## 7. Automated Evaluation
+## 6. Summary
 
-Run the harness to reproduce results and evaluate new backend versions:
+| Result | What it means |
+|--------|---------------|
+| P@3 = **0.47** | Nearly half of the top-3 results are relevant on average |
+| MRR = **0.63** | A relevant result appears at rank 1 or 2 in most queries |
+| NDCG@3 = **0.50** | The system captures about half the ideal quality when accounting for result position and partial matches |
+| **157× better than random** | Returning 3 skills at random from 921 would give P@3 ≈ 0.003; the system achieves 0.47 |
+| 2 queries unanswerable | These fail because the relevant skills don't exist in the database — not a search quality issue |
+| Q7 fixable without model changes | Adding a description to `github-issue-triage` would likely fix that query entirely |
+
+**Highest-impact improvements:**
+1. Fill in empty or sparse skill descriptions (would fix Q7-type failures)
+2. Add data analysis skills to the database (would fix Q4-type failures)
+3. Boost ranking for skills whose name directly matches the query (would improve Q1, Q5)
+4. Add a reranking step after the initial retrieval (would improve overall NDCG)
+
+---
+
+## 7. Running the Automated Evaluation
+
+The eval script calls the live backend and prints a full results table. No ML libraries needed to run it.
 
 ```bash
-# From repo root, with backend + Qdrant running:
+# From the repo root, with the backend and Qdrant running:
 python test_cases/eval_harness.py
 
-# Options
+# Specify options:
 python test_cases/eval_harness.py --top-k 5 --base-url http://localhost:8000
 
-# Exits code 1 (regression) if mean P@3 < 0.15
-# Writes results to test_cases/results/eval_<timestamp>.json
+# Output: printed table + test_cases/results/eval_<timestamp>.json
+# The script exits with an error if mean P@3 drops below 0.15
 ```
