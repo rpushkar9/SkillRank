@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { ThemeProvider } from "next-themes";
+import { DottedSurface } from "@/components/ui/dotted-surface";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -21,7 +23,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
+          <DottedSurface />
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
