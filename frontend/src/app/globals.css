@@ -93,10 +93,20 @@ body {
   100% { background-position: 0 0; }
 }
 
-/* Sweeping shimmer for search border */
-@keyframes shimmer-sweep {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+/* Rotating conic border for search bar */
+@property --search-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotate-search-border {
+  to { --search-angle: 360deg; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 0.9; }
 }
 
 @media (prefers-reduced-motion: reduce) {

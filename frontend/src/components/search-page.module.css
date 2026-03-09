@@ -60,11 +60,31 @@
 }
 
 .searchRow {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.75rem;
   margin-bottom: 0.75rem;
+  isolation: isolate;
+}
+
+/* Ambient glow behind the row — lights up on focus */
+.searchRow::after {
+  content: '';
+  position: absolute;
+  inset: -24px -8px;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at 40% 60%, rgb(129 140 248 / 18%) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.searchRow:focus-within::after {
+  opacity: 1;
+  animation: glow-pulse 2.8s ease-in-out infinite;
 }
 
 .srOnly {
@@ -78,51 +98,50 @@
   border: 0;
 }
 
-/* Wrapper handles flex sizing + shimmer border */
+/* Wrapper holds the rotating border + input */
 .searchInputWrap {
   position: relative;
   flex: 1 1 220px;
 }
 
-/* Shimmer border — visible only on focus-within */
+/* Spinning conic-gradient arc — only the 1px border ring shows via mask */
 .searchInputWrap::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: calc(var(--radius-sm) + 1px);
   padding: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    #818cf8 25%,
-    #a78bfa 50%,
-    #60a5fa 75%,
-    transparent 100%
+  background: conic-gradient(
+    from var(--search-angle),
+    transparent       0deg,
+    #818cf8          60deg,
+    #a78bfa         120deg,
+    #60a5fa         180deg,
+    transparent     230deg
   );
-  background-size: 200% 100%;
-  background-position: -200% 0;
-  /* Punch-through so only the 1px border is visible */
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity var(--dur-base) ease;
+  transition: opacity var(--dur-slow) ease;
   pointer-events: none;
 }
 
 .searchInputWrap:focus-within::before {
   opacity: 1;
-  animation: shimmer-sweep 2.2s ease-in-out infinite;
+  animation: rotate-search-border 3s linear infinite;
 }
 
 .searchInput {
   width: 100%;
-  height: 48px;
-  padding: 0 0.9rem;
+  height: 52px;
+  padding: 0 1rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--surface-inset);
+  background: rgb(9 9 11 / 70%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--text);
   font-family: inherit;
   font-size: 0.95rem;
@@ -135,13 +154,15 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: hsl(228 100% 60% / 50%);
-  box-shadow: 0 0 0 3px hsl(228 100% 60% / 20%), 0 0 20px 0 hsl(228 100% 60% / 8%);
+  border-color: rgb(129 140 248 / 35%);
+  box-shadow:
+    0 0 0 3px rgb(129 140 248 / 12%),
+    0 0 24px 0 rgb(129 140 248 / 10%);
 }
 
 .searchButton {
   position: relative;
-  height: 48px;
+  height: 52px;
   padding: 0 1.4rem;
   border-radius: var(--radius-sm);
   border: none;
