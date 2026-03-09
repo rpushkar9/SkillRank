@@ -6,6 +6,7 @@ import { recommendSkills } from "@/lib/recommend-client";
 import { truncate } from "@/lib/utils";
 import type { SearchResult } from "@/types/search";
 import { SkillCard, SkillCardSkeleton } from "@/components/skill-card";
+import { SearchBar } from "@/components/ui/search-bar";
 
 import styles from "./recommend-page.module.css";
 
@@ -65,30 +66,14 @@ export function RecommendPage() {
           </p>
         </header>
 
-        <form className={styles.searchRow} onSubmit={runRecommend}>
-          <label htmlFor="folder-path" className={styles.srOnly}>
-            Project folder path
-          </label>
-          <div className={styles.searchInputWrap}>
-            <input
-              id="folder-path"
-              className={styles.searchInput}
-              type="text"
-              placeholder="e.g. /Users/you/projects/my-project"
-              value={folderPath}
-              onChange={(e) => setFolderPath(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-          <button
-            className={styles.searchButton}
-            type="submit"
-            disabled={isLoading}
-            aria-busy={isLoading}
-          >
-            Get Recommendations
-          </button>
-        </form>
+        <SearchBar
+          value={folderPath}
+          onChange={setFolderPath}
+          onSubmit={() => runRecommend()}
+          placeholder="e.g. /Users/you/projects/my-project"
+          isLoading={isLoading}
+          submitLabel="Recommend"
+        />
 
         <div
           className={`${styles.status} ${error ? styles.statusError : ""}`}

@@ -7,6 +7,7 @@ import { searchSkills } from "@/lib/search-client";
 import { formatNumber } from "@/lib/utils";
 import type { SearchResult } from "@/types/search";
 import { SkillCard, SkillCardSkeleton } from "@/components/skill-card";
+import { SearchBar } from "@/components/ui/search-bar";
 
 import styles from "./search-page.module.css";
 
@@ -92,30 +93,14 @@ export function SearchPage() {
           <p className={styles.tagline}>Search for AI skills using natural language.</p>
         </header>
 
-        <form className={styles.searchRow} onSubmit={runSearch}>
-          <label htmlFor="skill-query" className={styles.srOnly}>
-            Search query
-          </label>
-          <div className={styles.searchInputWrap}>
-            <input
-              id="skill-query"
-              className={styles.searchInput}
-              type="text"
-              placeholder="e.g. I want to build a portfolio website"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              autoComplete="off"
-            />
-          </div>
-          <button
-            className={styles.searchButton}
-            type="submit"
-            disabled={isLoading}
-            aria-busy={isLoading}
-          >
-            Search
-          </button>
-        </form>
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          onSubmit={() => runSearch()}
+          placeholder="e.g. I want to build a portfolio website"
+          isLoading={isLoading}
+          submitLabel="Search"
+        />
 
         {/* Interpreted as */}
         {expandedQuery ? (
