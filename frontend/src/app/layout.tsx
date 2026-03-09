@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import { DottedSurface } from "@/components/ui/dotted-surface";
+import { AppNavBar } from "@/components/app-navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" disableTransitionOnChange>
           <DottedSurface />
+          <AppNavBar />
           {children}
         </ThemeProvider>
       </body>

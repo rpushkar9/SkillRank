@@ -5,7 +5,12 @@
 .page {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: 2.5rem var(--page-pad-x) 3rem;
+  /* top: clear fixed navbar (~56px) + breathing room; bottom: clear mobile nav */
+  padding: 5rem var(--page-pad-x) 6rem;
+}
+
+@media (min-width: 640px) {
+  .page { padding-top: 5.5rem; padding-bottom: 3rem; }
 }
 
 .header {

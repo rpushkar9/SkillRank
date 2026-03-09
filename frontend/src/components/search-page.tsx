@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 import { explainSkills } from "@/lib/explain-client";
@@ -91,11 +90,6 @@ export function SearchPage() {
         <header className={styles.header}>
           <h1 className={styles.title}>SkillRank</h1>
           <p className={styles.tagline}>Search for AI skills using natural language.</p>
-          <div className={styles.nav}>
-            <Link className={styles.navLink} href="/recommend">
-              Try Skills Recommender
-            </Link>
-          </div>
         </header>
 
         <form className={styles.searchRow} onSubmit={runSearch}>

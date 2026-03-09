@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 import { recommendSkills } from "@/lib/recommend-client";
@@ -64,11 +63,6 @@ export function RecommendPage() {
           <p className={styles.tagline}>
             Get skill recommendations based on your recent AI conversations.
           </p>
-          <div className={styles.nav}>
-            <Link className={styles.navLink} href="/">
-              Search skills manually
-            </Link>
-          </div>
         </header>
 
         <form className={styles.searchRow} onSubmit={runRecommend}>

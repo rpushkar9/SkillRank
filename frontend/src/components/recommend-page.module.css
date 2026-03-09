@@ -9,7 +9,11 @@
 .page {
   max-width: var(--page-max);
   margin: 0 auto;
-  padding: 2.5rem var(--page-pad-x) 3rem;
+  padding: 5rem var(--page-pad-x) 6rem;
+}
+
+@media (min-width: 640px) {
+  .page { padding-top: 5.5rem; padding-bottom: 3rem; }
 }
 
 .header {
