@@ -18,6 +18,8 @@ the most relevant skills from the [skills.sh](https://skills.sh) ecosystem, rank
 
 *Final project for INFO376 — Search & Recommender Systems*
 
+📄 **[Read the full technical report →](docs/SkillRank-Report.pdf)**
+
 </div>
 
 ---
@@ -31,6 +33,19 @@ the most relevant skills from the [skills.sh](https://skills.sh) ecosystem, rank
 </div>
 
 ---
+
+## 🎯 Why SkillRank?
+
+Finding the right AI skill usually means already knowing its exact name — traditional search and
+category browsing reward tools you've *already* heard of and hide better matches. But people describe
+what they want in plain language ("summarize long PDFs", "extract tables from research papers"), which
+keyword search can't match. SkillRank bridges that gap with three goals:
+
+1. **Hybrid retrieval** combining lexical (BM25) and dense semantic search — capturing both exact
+   technical terms and paraphrased intent.
+2. **Relevance-first reranking** that applies popularity and recency only *after* a candidate clears a
+   relevance bar, so niche-but-perfect skills aren't buried by popular ones.
+3. **An end-to-end system** — data pipeline, retrieval, reranking, and a clean interface.
 
 ## ✨ Highlights
 
@@ -120,6 +135,20 @@ harness (`test_cases/eval_harness.py`) that hits the live backend and computes s
 > re-grounding each query to real skills, the corrected **P@3 rose to 0.47** — separating *search
 > quality* from *data-coverage gaps*. Full methodology, per-query results, and error analysis are in
 > [`docs/EVALUATION_REPORT.md`](docs/EVALUATION_REPORT.md).
+
+**Representative per-query results** (validated 20-query set):
+
+| Query | P@3 | MRR | NDCG@3 |
+|-------|:---:|:---:|:------:|
+| React Native + Expo | 1.00 | 1.00 | 0.84 |
+| Blog post + SEO | 1.00 | 1.00 | 0.88 |
+| Design system | 0.67 | 1.00 | 0.87 |
+| Figma wireframes | 0.67 | 1.00 | 0.80 |
+| iOS + Firebase | 0.33 | 0.33 | 0.32 |
+| GitHub triage\* | 0.00 | 0.00 | 0.00 |
+| **Average** | **0.47** | **0.63** | **0.50** |
+
+<sub>\*GitHub triage fails because the matching skill has an empty description — a data-quality gap, not a ranking error.</sub>
 
 The harness fails (non-zero exit) if mean P@3 drops below **0.15** — a CI-style regression gate.
 
