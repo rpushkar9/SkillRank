@@ -64,24 +64,7 @@ the most relevant skills from the [skills.sh](https://skills.sh) ecosystem, rank
 
 ## 🏗️ Architecture
 
-```
-                         skills.sh
-                             │
-                       [Scrapy Spider]
-                             │
-                     skills_raw.jsonl  (~981 skills)
-                             │
-                    [build_index.py]
-                     ╱              ╲
-        Embed (all-MiniLM-L6-v2)   Clean & normalize
-                     ╲              ╱
-                      Qdrant (vector DB)
-                             │
-        User Query ──▶ [FastAPI Backend] ──▶ [Next.js Frontend]
-                        │            │
-                  [Ollama LLM]   [Qdrant]
-                (query expansion) (cosine-similarity search)
-```
+![SkillRank end-to-end system architecture](docs/architecture.png)
 
 **The pipeline in one line:**
 `scrape → clean → embed → index → (expand query) → search by meaning → rerank → explain → show`
@@ -139,6 +122,26 @@ harness (`test_cases/eval_harness.py`) that hits the live backend and computes s
 > [`docs/EVALUATION_REPORT.md`](docs/EVALUATION_REPORT.md).
 
 The harness fails (non-zero exit) if mean P@3 drops below **0.15** — a CI-style regression gate.
+
+## ⚖️ Trade-offs & Limitations
+
+**Design trade-offs**
+- **Local LLM over hosted** — query expansion runs on a small local Ollama model: zero API cost and
+  full privacy, at the price of less precise rewrites than a larger hosted model.
+- **Hybrid over single-method retrieval** — combining BM25 + dense vectors improves robustness across
+  query styles, at the cost of added complexity, storage, and latency.
+- **Relevance gated before popularity** — install/recency signals only boost candidates that already
+  clear a relevance threshold, so niche-but-relevant skills aren't buried by popular ones.
+
+**Known limitations**
+- Retrieval quality depends heavily on the **textual quality of the corpus** — sparse or missing skill
+  descriptions hurt both lexical and semantic matching.
+- Fusion and reranking weights are **hand-tuned, not learned**.
+- Authority signals (installs, recency) are **proxies** for quality, not ground truth.
+- The **20-query benchmark** is directional; larger interaction logs / a user study are future work.
+
+> Full problem framing, system design, and analysis are documented in the team's NeurIPS-style
+> technical report.
 
 ---
 
