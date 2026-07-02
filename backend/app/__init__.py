@@ -1,0 +1,1 @@
+"""SkillRank backend application package."""

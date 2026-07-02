@@ -1,0 +1,159 @@
+.screen {
+  min-height: 100vh;
+}
+
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 5rem var(--page-pad-x) 6rem;
+}
+
+@media (min-width: 640px) {
+  .page { padding-top: 5.5rem; padding-bottom: 3rem; }
+}
+
+/* ——— Header ——— */
+
+.header {
+  text-align: center;
+  margin-bottom: 2.25rem;
+}
+
+.title {
+  font-family: 'Sora', system-ui, sans-serif;
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  background-image: linear-gradient(
+    90deg,
+    #f8fafc, #f8fafc 28%,
+    #818cf8 40%,
+    #a78bfa 50%,
+    #c084fc 60%,
+    #f8fafc 72%, #f8fafc
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: chroma-slide 8s ease-in-out infinite;
+  margin: 0 0 0.5rem;
+}
+
+.tagline {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+
+/* ——— Status + query expansion ——— */
+
+.status {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+  margin-bottom: 0.75rem;
+}
+
+.statusError {
+  color: var(--error);
+}
+
+.expandedQuery {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.6rem;
+}
+
+.expandedLabel {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--accent);
+  margin-right: 0.35rem;
+}
+
+.expandTiming {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+  margin-bottom: 0.75rem;
+}
+
+/* ——— Results ——— */
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.empty {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  padding: 3rem 0.5rem;
+  text-align: center;
+}
+
+.empty::before {
+  content: '◇';
+  display: block;
+  font-size: 2rem;
+  opacity: 0.15;
+  margin-bottom: 0.5rem;
+}
+
+/* ——— Explanation card ——— */
+
+.explanationCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  margin-top: 0.65rem;
+  animation: fadeIn var(--dur-slow) var(--ease-out) both;
+}
+
+.explanationLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+
+.explanationLoading {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.explanationList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.explanationLine {
+  font-size: 0.875rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+@media (max-width: 600px) {
+  .title { font-size: 2rem; }
+}

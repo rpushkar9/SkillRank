@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SkillRank Search</title>
+    <style>
+      :root {
+        --bg: #020617;
+        --border: #1f2937;
+        --text: #e5e7eb;
+        --muted: #9ca3af;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #1d283a 0, #020617 40%, #000 100%);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      .page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 2.5rem 1.5rem 3rem;
+      }
+
+      header {
+        margin-bottom: 2rem;
+      }
+
+      h1 {
+        margin: 0 0 0.3rem;
+        font-size: 1.9rem;
+        letter-spacing: -0.03em;
+      }
+
+      .tagline {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
+      .search-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 1.75rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .search-input {
+        flex: 1 1 220px;
+        padding: 0.7rem 0.9rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: rgba(15, 23, 42, 0.85);
+        color: var(--text);
+        font-size: 0.95rem;
+      }
+
+      .search-input::placeholder {
+        color: var(--muted);
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.7);
+      }
+
+      .btn {
+        padding: 0.7rem 1.2rem;
+        border-radius: 8px;
+        border: none;
+        background: var(--accent);
+        color: #f9fafb;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .btn:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .status {
+        min-height: 1.2rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 0.75rem;
+      }
+
+      .status.error {
+        color: #f97316;
+      }
+
+      .results {
+        margin-top: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .card {
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 12px;
+        border: 1px solid rgba(31, 41, 55, 0.9);
+        padding: 1rem 1.1rem;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+        margin-bottom: 0.4rem;
+      }
+
+      .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .card-title a {
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      .card-title a:hover {
+        color: var(--accent);
+      }
+
+      .score {
+        font-size: 0.75rem;
+        color: var(--muted);
+        padding: 0.1rem 0.4rem;
+        border-radius: 999px;
+        border: 1px solid rgba(55, 65, 81, 0.8);
+      }
+
+      .card-desc {
+        margin: 0.15rem 0 0.5rem;
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      .card-meta {
+        font-size: 0.8rem;
+        color: var(--muted);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+      }
+
+      .card-meta span + span::before {
+        content: "•";
+        margin: 0 0.25rem 0 0.1rem;
+        color: #4b5563;
+      }
+
+      .card-link {
+        display: inline-flex;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .card-link:hover {
+        text-decoration: underline;
+      }
+
+      .empty {
+        font-size: 0.9rem;
+        color: var(--muted);
+        padding: 2rem 0.5rem;
+        text-align: center;
+      }
+
+      @media (max-width: 600px) {
+        .page {
+          padding-inline: 1.25rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>SkillRank</h1>
+        <p class="tagline">Search for AI skills using natural language.</p>
+      </header>
+
+      <div class="search-row">
+        <input
+          id="query"
+          class="search-input"
+          type="text"
+          placeholder="e.g. summarize long PDFs, extract tables from papers"
+          autocomplete="off"
+        />
+        <button id="searchBtn" class="btn" type="button">Search</button>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+      <div id="results" class="results"></div>
+    </div>
+
+    <script>
+      const queryEl = document.getElementById("query");
+      const statusEl = document.getElementById("status");
+      const resultsEl = document.getElementById("results");
+      const searchBtn = document.getElementById("searchBtn");
+
+      function setStatus(msg, isError = false) {
+        statusEl.textContent = msg;
+        statusEl.className = "status" + (isError ? " error" : "");
+      }
+
+      function formatNum(n) {
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+        return String(n);
+      }
+
+      function escapeHtml(s) {
+        const div = document.createElement("div");
+        div.textContent = s ?? "";
+        return div.innerHTML;
+      }
+
+      function truncate(s, len) {
+        if (!s) return "";
+        return s.length <= len ? s : s.slice(0, len).trim() + "…";
+      }
+
+      function renderResults(list) {
+        if (!list || list.length === 0) {
+          resultsEl.innerHTML =
+            '<div class="empty">No skills found. Try rephrasing your task.</div>';
+          return;
+        }
+
+        resultsEl.innerHTML = list
+          .map((r) => {
+            const desc = truncate(r.description, 260);
+            const firstSeen = r.first_seen
+              ? `first seen: ${escapeHtml(r.first_seen)}`
+              : "";
+            return `
+              <article class="card">
+                <div class="card-header">
+                  <h2 class="card-title">
+                    ${
+                      r.skill_url
+                        ? `<a href="${r.skill_url}" target="_blank" rel="noopener">${escapeHtml(
+                            r.name
+                          )}</a>`
+                        : escapeHtml(r.name)
+                    }
+                  </h2>
+                  <span class="score">score ${r.final_score.toFixed(3)}</span>
+                </div>
+                <p class="card-desc">${escapeHtml(desc)}</p>
+                <div class="card-meta">
+                  <span>weekly: ${formatNum(r.weekly_installs)}</span>
+                  <span>total: ${formatNum(r.total_installs)}</span>
+                  ${firstSeen ? `<span>${firstSeen}</span>` : ""}
+                </div>
+                ${
+                  r.skill_url
+                    ? `<a class="card-link" href="${r.skill_url}" target="_blank" rel="noopener">View skill →</a>`
+                    : ""
+                }
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      async function doSearch() {
+        const q = queryEl.value.trim();
+        if (!q) {
+          setStatus("Type a query first.");
+          resultsEl.innerHTML = "";
+          return;
+        }
+
+        setStatus("Searching…");
+        searchBtn.disabled = true;
+
+        try {
+          const res = await fetch(
+            `/api/search?q=${encodeURIComponent(q)}&k=5`
+          );
+          const data = await res.json();
+          if (!res.ok) {
+            setStatus(data.error || "Search failed.", true);
+            resultsEl.innerHTML = "";
+            return;
+          }
+          setStatus(`Found ${data.results.length} skill(s).`);
+          renderResults(data.results);
+        } catch (err) {
+          setStatus("Network error. Is the backend running?", true);
+          resultsEl.innerHTML = "";
+        } finally {
+          searchBtn.disabled = false;
+        }
+      }
+
+      searchBtn.addEventListener("click", doSearch);
+      queryEl.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          doSearch();
+        }
+      });
+    </script>
+  </body>
+</html>
+

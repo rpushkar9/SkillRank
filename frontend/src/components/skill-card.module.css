@@ -1,0 +1,112 @@
+.card {
+  background: var(--surface);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  transition: background var(--dur-fast) ease, border-color var(--dur-fast) ease;
+  animation: cardIn var(--dur-slow) var(--ease-out) both;
+  animation-delay: calc(var(--card-index, 0) * 60ms);
+}
+
+@supports not (backdrop-filter: blur(8px)) {
+  .card { background: rgb(15 23 42 / 90%); }
+}
+
+.card[data-tier="strong"] { border-left-color: var(--success); }
+.card[data-tier="good"]   { border-left-color: var(--accent); }
+.card[data-tier="relevant"] { border-left-color: var(--border-strong); }
+
+.card:hover { background: var(--surface-hover); }
+
+.cardHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.cardTitle a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.cardTitle a:hover {
+  color: var(--accent);
+}
+
+.matchBadge {
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.matchBadge[data-tier="strong"] { color: var(--success); border-color: var(--success); }
+.matchBadge[data-tier="good"]   { color: var(--accent); border-color: var(--accent); }
+.matchBadge[data-tier="relevant"] { color: var(--text-secondary); border-color: var(--border-strong); }
+
+.cardDesc {
+  margin: 0.15rem 0 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.cardMeta {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.cardMeta span + span::before {
+  content: "·";
+  margin: 0 0.2rem 0 0;
+}
+
+.cardLink {
+  display: inline-flex;
+  margin-top: 0.55rem;
+  font-size: 0.84rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+}
+
+/* Skeleton */
+.skeleton {
+  height: 120px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    rgb(255 255 255 / 7%) 50%,
+    var(--surface) 75%
+  );
+  background-size: 400px 100%;
+  animation:
+    shimmer 1.4s ease-in-out infinite,
+    cardIn var(--dur-slow) var(--ease-out) both;
+  animation-delay:
+    calc(var(--card-index, 0) * 80ms),
+    calc(var(--card-index, 0) * 80ms);
+}

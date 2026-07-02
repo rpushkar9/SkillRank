@@ -1,21 +1,33 @@
-# Search pipeline generated data
-search/data/
-search/embeddings_cache.pkl
-search/test_embeddings_cache.pkl
-search/test_sample_50.jsonl
-
-# Virtual environment
-search/venv/
-.venv/
-
-# Generated data (rebuild with scripts/build_skills_clean.py)
-skills_scraper/data/skills_clean.jsonl
+# OS
+.DS_Store
 
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
+.venv/
+search/venv/
+.pytest_cache/
+
+# Node
+node_modules/
+.next/
+
+# Environment files (contain secrets)
+.env
+.env.local
+!.env.example
+!.env.local.example
+
+# Search pipeline generated data
+search/data/
+search/embeddings_cache.pkl
+search/test_embeddings_cache.pkl
+search/test_sample_50.jsonl
+
+# Generated data (rebuild with scripts/build_skills_clean.py)
+skills_scraper/data/skills_clean.jsonl
 
 # Local AI/dev tooling (never push to shared repo)
 .claude/
